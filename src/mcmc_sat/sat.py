@@ -4,6 +4,7 @@ import math
 import random
 import numpy as np
 import re
+import os
 
 
 # NOTE: The function below creates a new variable for each bit in the
@@ -141,6 +142,11 @@ def save_dimacs(g: Goal, output_filepath: str) -> (int, dict):
     #       Also, we return the map variables_number because we need
     #       to map back the results from spur to its Z3 variables.
     (dimacs_format, n_varibles, varibles_number) = convert_to_cnf_and_dimacs(g)
+
+    path = '/'.join(output_filepath.split('/')[:-1])
+    if not os.path.exists(path) and len(path) > 0:
+        raise RuntimeError(f'Directory {path} not found')
+
     with open(output_filepath, 'w') as file:
         for row in dimacs_format:
             file.write(' '.join([str(item) for item in row]))

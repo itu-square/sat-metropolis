@@ -1,5 +1,6 @@
 from subprocess import call
-from z3 import *
+from z3 import Solver
+import os
 
 
 def generate_smt2(solver: Solver) -> str:
@@ -18,6 +19,10 @@ def save_smt2(solver: Solver, filepath: str) -> None:
     The file produced by this function is intended to be used as the
     input file for `execute_megasampler`.
     """
+    path = '/'.join(filepath.split('/')[:-1])
+    if not os.path.exists(path) and len(path) > 0:
+        raise RuntimeError(f'Directory {path} not found')
+
     with open(filepath, 'w') as file:
         file.write(generate_smt2(solver))
 

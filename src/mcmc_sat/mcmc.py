@@ -7,6 +7,7 @@ import arviz as az
 def sample_mh_trace(num_samples: int,
                     num_chains: int,
                     solver_samples: [dict[str, int]],
+                    uniform_samples: bool = True,
                     var_names: [str] = []) -> az.InferenceData:
     # NOTE: For now, we use the same solver samples for all chains. We
     # could consider using a fresh set of samples for each chain. If
@@ -14,12 +15,29 @@ def sample_mh_trace(num_samples: int,
     # and the number of chains could be determine by the length of
     # this list.
 
-    if num_samples > len(solver_samples):
-        raise RuntimeError(
-            """`num_samples` must be less than or equal
-            to the length of the list of samples in
-            `solver_samples`"""
-        )
+    # TODO: Discuss the snippet below in next meeting In a nutshell,
+    #       this function can be used in two modes.
+    #
+    #       First mode, `solver_samples` contains a set of uniform
+    #       samples from the SMT problem (e.g., what spur produces).
+    #
+    #       Second mode, `solver_samples` contains a set of unique
+    #       samples to the SMT problem.
+
+    num_solver_samples = 0
+    if uniform_samples:
+        if num_samples > len(solver_samples):
+            raise RuntimeError(
+                """`num_samples` must be less than or equal
+                to the length of the list of samples in
+                `solver_samples`"""
+            )
+        else:
+            num_solver_samples = num_samples
+    else:
+        num_solver_samples = len(solver_samples)
+    # up to here the new snippet
+
     if var_names == []:
         var_names = solver_samples[0].keys()
     trace = {var: np.ndarray(shape=(num_chains, num_samples), dtype=int)
@@ -28,7 +46,9 @@ def sample_mh_trace(num_samples: int,
         for var in var_names:
             selected_samples = []
             for i in range(num_samples):  # this loop should go before var_names
-                r = random.randint(0, num_samples-1)  # NOTE: this is redundant
+                # NOTE: the line below is redundant
+                # NOTE II: Not really redundant if the solver only produce distinct solutions
+                r = random.randint(0, num_solver_samples-1)
                 # NOTE II: Might be useful for differential sampling, or using them as starting points
                 # NOTE III: We can do weighted sampling to incorporate a prior
 

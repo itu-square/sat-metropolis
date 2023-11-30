@@ -15,6 +15,8 @@ def sample_mh_trace(num_samples: int,
     # and the number of chains could be determine by the length of
     # this list.
 
+    # TODO: Take as input a function with a density function proprotional to the target distribution
+
     # TODO: Discuss the snippet below in next meeting In a nutshell,
     #       this function can be used in two modes.
     #

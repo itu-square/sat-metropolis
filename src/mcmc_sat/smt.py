@@ -87,3 +87,38 @@ def parse_megasamples(filepath: str) -> [dict[str, int]]:
             b = {i: j for (i, j) in a}
             res_map.append(b)
     return res_map
+
+
+def get_samples_smt_problem(z3_problem: Solver) -> [dict[str, int]]:
+    """
+    TODO: Document
+    """
+    # get current working directory for defining the necessary paths below
+    CWD = os.getcwd()
+
+    # define megasampler input directory and create it if it does not exist
+    MEGASAMPLER_INPUT_DIR = 'megasampler_input'
+    MEGASAMPLER_INPUT_DIR_PATH = os.path.join(CWD, MEGASAMPLER_INPUT_DIR)
+    os.mkdir(MEGASAMPLER_INPUT_DIR_PATH) if not os.path.exists(MEGASAMPLER_INPUT_DIR_PATH) else None
+
+    # define megasampler input file name (used as output of the smt2 format of the problem)
+    megasampler_input_file = 'z3_problem.smt2'
+    megasampler_input_filepath = f'{MEGASAMPLER_INPUT_DIR}/{megasampler_input_file}'
+    save_smt2(solver=z3_problem, filepath=megasampler_input_filepath)
+
+    MEGASAMPLER_OUTPUT_DIR = 'megasampler_output'
+    MEGASAMPLER_OUTPUT_DIR_PATH = os.path.join(CWD, MEGASAMPLER_OUTPUT_DIR)
+
+    # create directory if it does not exist
+    os.mkdir(MEGASAMPLER_OUTPUT_DIR_PATH) if not os.path.exists(MEGASAMPLER_OUTPUT_DIR_PATH) else None
+
+    # execute megasampler
+    execute_megasampler(input_filepath=megasampler_input_filepath,
+                        output_dir=MEGASAMPLER_OUTPUT_DIR)
+
+    # megasampler output file with samples (name automatically set by megasampler)
+    file_samples = f'{MEGASAMPLER_OUTPUT_DIR}/{megasampler_input_file}.samples'
+
+    # parsing the samples
+    samples = parse_megasamples(file_samples)
+    return samples

@@ -1,6 +1,33 @@
 import random
 import numpy as np
 import arviz as az
+from src.mcmc_sat import smt
+
+
+def sample_mh_trace_from_z3_model(backend: str,
+                                  z3_problem,
+                                  num_samples: int = 10000,
+                                  num_chains: int = 4):
+    """
+    TODO: Document
+    TODO: We must implement different behaviour depending on whether
+          we use megasampler or spur.  The backend should be specified
+          in the paramter `backend` ϵ {'megasampler', 'spur'} If we
+          must use the appropriate format for the z3_problem.  That
+          is, an object of type Solver for megasampler and an object
+          of type goal for spur.
+    """
+    # samples = get_samples_smt_problem(z3_problem=z3_problem) if backend == 'megasampler' else print('Not implemented yet')
+    samples = []
+    if backend == 'megasampler':
+        samples = smt.get_samples_smt_problem(z3_problem=z3_problem)
+    else:
+        raise RuntimeError('Not implemented yet')
+
+    # run MCMC using the "megasamples" :)
+    trace = sample_mh_trace(num_samples, num_chains, samples)
+
+    return trace
 
 
 # TODO: add function for computing metropolis ratio

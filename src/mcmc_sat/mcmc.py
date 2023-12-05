@@ -1,11 +1,13 @@
 import random
 import numpy as np
 import arviz as az
-from src.mcmc_sat import smt
+from src.mcmc_sat import smt, sat
 
 
 def sample_mh_trace_from_z3_model(backend: str,
                                   z3_problem,
+                                  num_vars: int = None, # mandatory for spur
+                                  num_bits: int = None, # mandatory for spur
                                   num_samples: int = 10000,
                                   num_chains: int = 4):
     """
@@ -21,8 +23,11 @@ def sample_mh_trace_from_z3_model(backend: str,
     samples = []
     if backend == 'megasampler':
         samples = smt.get_samples_smt_problem(z3_problem=z3_problem)
-    else:
-        raise RuntimeError('Not implemented yet')
+    elif backend == 'spur':
+        samples = sat.get_samples_sat_problem(z3_problem=z3_problem,
+                                              num_vars=num_vars,
+                                              num_bits=num_bits,
+                                              num_samples=num_samples)
 
     # run MCMC using the "megasamples" :)
     trace = sample_mh_trace(num_samples, num_chains, samples)

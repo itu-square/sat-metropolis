@@ -92,6 +92,7 @@ def parse_megasamples(filepath: str) -> [dict[str, int]]:
 def get_samples_smt_problem(z3_problem: Solver) -> [dict[str, int]]:
     """
     TODO: Document
+    TODO: num_samples should be parameter
     """
     # get current working directory for defining the necessary paths below
     CWD = os.getcwd()

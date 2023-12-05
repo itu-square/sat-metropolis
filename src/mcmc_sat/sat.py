@@ -1,11 +1,12 @@
 from subprocess import call
-from z3 import Goal, BitVecSort, Bool, And, BVAddNoOverflow, BVMulNoOverflow, BVSubNoUnderflow, Then, simplify, is_app_of, Z3_OP_NOT, Not, BoolRef
+from z3 import Goal, BitVecSort, Bool, And, BVAddNoOverflow, BVMulNoOverflow, BVSubNoUnderflow, Then, simplify, is_app_of, Z3_OP_NOT, Not, BoolRef, solve, unsat
 import math
 import random
 import numpy as np
 import re
 import os
 
+from src.mcmc_sat import utils
 
 # NOTE: The function below creates a new variable for each bit in the
 #       bit-vector.  Then, it maps the correspoding variable of the
@@ -247,4 +248,55 @@ def reverse_bit_blasting(variable_values: dict[str, list[bool]],
     for i in range(num_samples):
         sample = {v: map_var_name_samples[v][i] for v in var_names}
         solver_samples.append(sample)
+    return solver_samples
+
+
+def get_samples_sat_problem(z3_problem: Goal,
+                            num_vars: int, # number of varibles unblasted
+                            num_bits: int, # number of bits of BitVectors
+                                           # (assumption: all the same)
+                            num_samples: int = 10000,
+                            sanity_check_problem: bool = True,
+                            sanity_check_samples: bool = False):
+
+    # TODO: Implement properly (solve does not return a boolean)
+    if sanity_check_problem and solve(z3_problem) == unsat:
+        raise RuntimeError('The problem you input is UNSAT')
+
+    CWD = os.getcwd()
+
+    SPUR_INPUT_DIR = 'spur_input'
+    SPUR_INPUT_DIR_PATH = os.path.join(CWD, SPUR_INPUT_DIR)
+    os.mkdir(SPUR_INPUT_DIR_PATH) if not os.path.exists(SPUR_INPUT_DIR_PATH) else None
+
+    SPUR_INPUT_FILE = 'z3_problem.cnf'
+    SPUR_INPUT_FILEPATH = f'{SPUR_INPUT_DIR}/{SPUR_INPUT_FILE}'
+    (num_blasted_vars, variables_number) = save_dimacs(z3_problem,
+                                                       SPUR_INPUT_FILEPATH)
+
+    # spur sampling \o/
+    execute_spur(SPUR_INPUT_FILEPATH, num_samples=num_samples)
+
+    # parsing spur samples
+    samples = parse_spur_samples(SPUR_INPUT_DIR, SPUR_INPUT_FILE,
+                                 num_samples, num_blasted_vars)
+
+    # map spur samples to the corresponding Z3 variable
+    map_variable_values = map_spur_samples_to_z3_vars(variables_number,
+                                                      num_blasted_vars,
+                                                      samples)
+
+    # reverse bit-blasting
+    solver_samples = reverse_bit_blasting(map_variable_values,
+                                          num_samples,
+                                          num_vars,
+                                          num_bits)
+
+    # sanity check (optional, heavy computation for large number of samples)
+    # TODO: Implement properly
+    # if sanity_check_samples and not utils.sat_checking_samples(z3_problem,
+    #                                                            solver_samples[:10],
+    #                                                            var_list):
+    #     raise RuntimeError('Some of the samples produced by SPUR do not satisfy the problem')
+
     return solver_samples

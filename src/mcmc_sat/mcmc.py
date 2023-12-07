@@ -19,17 +19,18 @@ def sample_mh_trace_from_z3_model(backend: str,
           is, an object of type Solver for megasampler and an object
           of type goal for spur.
     """
-    # samples = get_samples_smt_problem(z3_problem=z3_problem) if backend == 'megasampler' else print('Not implemented yet')
+
     samples = []
     if backend == 'megasampler':
-        samples = smt.get_samples_smt_problem(z3_problem=z3_problem)
+        samples = smt.get_samples_smt_problem(z3_problem=z3_problem,
+                                              num_samples=num_samples)
     elif backend == 'spur':
         samples = sat.get_samples_sat_problem(z3_problem=z3_problem,
                                               num_vars=num_vars,
                                               num_bits=num_bits,
                                               num_samples=num_samples)
 
-    # run MCMC using the "megasamples" :)
+    # run MCMC using the samples from spur or megasampler
     trace = sample_mh_trace(num_samples, num_chains, samples)
 
     return trace
@@ -39,7 +40,6 @@ def sample_mh_trace_from_z3_model(backend: str,
 def sample_mh_trace(num_samples: int,
                     num_chains: int,
                     solver_samples: [dict[str, int]],
-                    uniform_samples: bool = True,
                     var_names: [str] = []) -> az.InferenceData:
     # NOTE: For now, we use the same solver samples for all chains. We
     # could consider using a fresh set of samples for each chain. If
@@ -47,29 +47,20 @@ def sample_mh_trace(num_samples: int,
     # and the number of chains could be determine by the length of
     # this list.
 
-    # TODO: Take as input a function with a density function proprotional to the target distribution
+    # TODO: Take as input a function with a density function
+    # proprotional to the target distribution
 
-    # TODO: Discuss the snippet below in next meeting In a nutshell,
-    #       this function can be used in two modes.
-    #
-    #       First mode, `solver_samples` contains a set of uniform
-    #       samples from the SMT problem (e.g., what spur produces).
-    #
-    #       Second mode, `solver_samples` contains a set of unique
-    #       samples to the SMT problem.
+    # Informing users if there is mismatch between the specified
+    # number of samples to generate and the number of samples in
+    # `solver_samples`
+    num_solver_samples = len(solver_samples)
+    if num_samples > num_solver_samples:
+        # TO-DISCUSS: Is this a good solution for this case?
+        print(f'The parameter `solver_samples` only contains {num_solver_samples} samples. Thus, every chain will contain {num_solver_samples} instead of {num_samples}. Try running the SAT/SMT sampler longer to obtain more samples.')
+        num_samples = num_solver_samples
+    elif num_samples < num_solver_samples:
+        print(f'The parameter `solver_samples` contains {num_solver_samples}, which is larger that the number of sample per chain specified: {num_samples}. Every chain will contain {num_samples} samples as specified. Nevertheless, we inform you that you can produce chains of up to {num_solver_samples} if you specify so in {num_samples}.')
 
-    num_solver_samples = 0
-    if uniform_samples:
-        if num_samples > len(solver_samples):
-            raise RuntimeError(
-                """`num_samples` must be less than or equal
-                to the length of the list of samples in
-                `solver_samples`"""
-            )
-        else:
-            num_solver_samples = num_samples
-    else:
-        num_solver_samples = len(solver_samples)
     # up to here the new snippet
 
     if var_names == []:
@@ -82,7 +73,7 @@ def sample_mh_trace(num_samples: int,
             for i in range(num_samples):  # this loop should go before var_names
                 # NOTE: the line below is redundant
                 # NOTE II: Not really redundant if the solver only produce distinct solutions
-                r = random.randint(0, num_solver_samples-1)
+                r = random.randint(0, num_samples-1)
                 # NOTE II: Might be useful for differential sampling, or using them as starting points
                 # NOTE III: We can do weighted sampling to incorporate a prior
 

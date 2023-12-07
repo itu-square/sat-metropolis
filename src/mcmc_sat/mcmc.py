@@ -2,6 +2,7 @@ import random
 import numpy as np
 import arviz as az
 from src.mcmc_sat import smt, sat
+from z3 import Solver, Int, Sum
 
 
 def sample_mh_trace_from_z3_model(backend: str,
@@ -85,6 +86,40 @@ def sample_mh_trace(num_samples: int,
                 selected_samples.append(solver_samples[r][var])
             trace[var][chain] = selected_samples
     return az.convert_to_inference_data(trace)
+
+
+def sample_mh_trace_from_conf_matrix_smt(A: np.ndarray,
+                                         y: np.ndarray,
+                                         num_samples: int = 10000):
+    """TODO: Document Function to sample directly from a problem
+    specified using a configuration matrix A, and a set of
+    observations y. The function automatically builds a Z3 model and
+    samples using megasampler.
+    """
+    num_vars = A.shape[1]
+    num_ys   = y.shape[0]
+
+    x = [Int(f'x{i}') for i in range(num_vars)]
+
+    s = Solver()
+
+    for i in range(num_vars):
+        s.add(x[i] >= 0)
+
+    for i in range(len(y)):
+        # Maja's original
+        # vars_ = []
+        # for j in range(num_vars):
+        #     if(A[i][j]==1):
+        #         vars_.append(x[j])
+        vars_ = [x[j] for j in range(num_vars) if A[i][j] == 1]  # alternative
+        s.add(Sum(vars_) == y[i])
+
+    trace = sample_mh_trace_from_z3_model(backend='megasampler',
+                                          z3_problem=s,
+                                          num_samples=num_samples)
+
+    return trace
 
 
 def __get_sample(var, samples):

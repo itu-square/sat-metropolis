@@ -3,6 +3,7 @@ import numpy as np
 import arviz as az
 from src.mcmc_sat import smt, sat
 from z3 import Solver, Int, Sum
+from typing import Callable
 
 
 def sample_mh_trace_from_z3_model(backend: str,
@@ -41,6 +42,8 @@ def sample_mh_trace_from_z3_model(backend: str,
 def sample_mh_trace(num_samples: int,
                     num_chains: int,
                     solver_samples: [dict[str, int]],
+                    f: Callable[[list[int]], float] = lambda x: 1,  # by default all samples have the same probability
+                                                                    # this should mean uniform prior (if samples uniformly distributed)
                     var_names: [str] = []) -> az.InferenceData:
     # NOTE: For now, we use the same solver samples for all chains. We
     # could consider using a fresh set of samples for each chain. If
@@ -64,27 +67,44 @@ def sample_mh_trace(num_samples: int,
 
     # up to here the new snippet
 
+    # obtain variable names from samples if not specified
     if var_names == []:
         var_names = solver_samples[0].keys()
     trace = {var: np.ndarray(shape=(num_chains, num_samples), dtype=int)
              for var in var_names}
+
+    # TODO: make a regular `def` function?
+    should_I_stay_or_should_I_go = lambda s_i, s_prime, alpha, u: s_prime if u <= alpha else s_i
+
+    # TODO: make a regular `def` function?
+    get_var_trace = lambda var_name, s: [s_i[var_name] for s_i in s]
+
+    # generate each chain separately
     for chain in range(num_chains):
+        # init memory for trace
+        s: [dict[str, int]] = []
+        # random shuffle of samples (to produce different chains with
+        # the same solver sample, TO-DISCUSS)
+        np.random.shuffle(solver_samples)
+        # take inital state from sample
+        s.append(solver_samples[0])
+        # s_i: dict[str, int] = s_0
+        for i in range(num_samples-1):
+            # 1. draw a sample for candidate next state
+            s_prime: dict[str, int] = solver_samples[i+1]
+            # 2. compute acceptance ratio (s[i] is the current state)
+            alpha: float = f(s_prime)/f(s[i])
+            # 3. draw a sample uniformly from the unit interval -> U(0,1)
+            u: float = np.random.uniform(0, 1)
+            # 4. decide whether you move to next state
+            s_next: dict[str, int] = should_I_stay_or_should_I_go(s[i],
+                                                                  s_prime,
+                                                                  alpha, u)
+            # 5. add it to trace
+            s.append(s_next)
+        # switch to input format for arviz
         for var in var_names:
-            selected_samples = []
-            for i in range(num_samples):  # this loop should go before var_names
-                # NOTE: the line below is redundant
-                # NOTE II: Not really redundant if the solver only produce distinct solutions
-                r = random.randint(0, num_samples-1)
-                # NOTE II: Might be useful for differential sampling, or using them as starting points
-                # NOTE III: We can do weighted sampling to incorporate a prior
-
-                # for now, all samples are accepted
-
-                # a bit inelegant mutable state solution, but we might
-                # want to check the metropolis acceptance ratio in the
-                # future to decide whether the sample is accepted
-                selected_samples.append(solver_samples[r][var])
-            trace[var][chain] = selected_samples
+            trace[var][chain] = get_var_trace(var, s)
     return az.convert_to_inference_data(trace)
 
 

@@ -2,7 +2,7 @@ import random
 import numpy as np
 import arviz as az
 from src.mcmc_sat import smt, sat
-from z3 import Solver, Int, Sum
+from z3 import Solver, Int, Sum, Goal, BitVec, ULE
 from typing import Callable
 
 
@@ -111,10 +111,25 @@ def sample_mh_trace(num_samples: int,
 def sample_mh_trace_from_conf_matrix_smt(A: np.ndarray,
                                          y: np.ndarray,
                                          num_samples: int = 10000):
-    """TODO: Document Function to sample directly from a problem
-    specified using a configuration matrix A, and a set of
-    observations y. The function automatically builds a Z3 model and
-    samples using megasampler.
+    """Function to sample directly from a linear problem of the form y =
+    Ax where A is a configuration matrix and y are observed
+    values. The unknown variables are the elements of the vector
+    x. This is a common format for linear problems, and this function
+    is specially useful to compare our tool with the work by Hazelton
+    et al.
+
+    The matrix A must be a binary configureation matrix with len(y)
+    rows and len(x) columns. The vector y are the observations. The
+    configuration matrix defines the linear relations between
+    variables.
+
+    The function builds a Z3 model with the constraints defined by the
+    configuration matrix and the vector y. Then, it calls the regular
+    `sample_mh_trace_from_z3_model` and invokes the `megasampler`
+    backend.
+
+    The number of variables and is inferred directly from the
+    configuration matrix.
     """
     num_vars = A.shape[1]
     num_ys   = y.shape[0]
@@ -138,6 +153,42 @@ def sample_mh_trace_from_conf_matrix_smt(A: np.ndarray,
     trace = sample_mh_trace_from_z3_model(backend='megasampler',
                                           z3_problem=s,
                                           num_samples=num_samples)
+
+    return trace
+
+def sample_mh_trace_from_conf_matrix_sat(A: np.ndarray,
+                                         y: np.ndarray,
+                                         num_bits: int = None,
+                                         num_samples: int = 10000,
+                                         num_chains: int = 4):
+    """TODO: Document Function to sample directly from a problem
+    specified using a configuration matrix A, and a set of
+    observations y. The function automatically builds a Z3 model and
+    samples using spur. Here we also need to input the number of bits.
+    """
+    num_vars = A.shape[1]
+    num_ys   = y.shape[0]
+
+    x = [BitVec(f'x{i}',num_bits) for i in range(num_vars)]
+
+    g = Goal()
+
+    sat.add_bool_vars_to_goal(g, x)
+
+    for i in range(num_vars):
+        g.add(ULE(0,x[i]))
+
+    for i in range(len(y)):
+        vars_ = [x[j] for j in range(num_vars) if A[i][j] == 1]
+        sat.addition_does_not_overflow(vars_)
+        g.add(Sum(vars_) == y[i])
+
+    trace = sample_mh_trace_from_z3_model(backend='spur',
+                                          z3_problem=g,
+                                          num_vars=num_vars,
+                                          num_bits=num_bits,
+                                          num_samples=num_samples,
+                                          num_chains=num_chains)
 
     return trace
 

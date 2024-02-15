@@ -8,10 +8,11 @@ from typing import Callable
 
 def sample_mh_trace_from_z3_model(backend: str,
                                   z3_problem,
-                                  num_vars: int = None, # mandatory for spur
-                                  num_bits: int = None, # mandatory for spur
+                                  num_vars: int = None,  # mandatory for spur
+                                  num_bits: int = None,  # mandatory for spur
                                   num_samples: int = 10000,
-                                  num_chains: int = 4):
+                                  num_chains: int = 4,
+                                  print_z3_model: bool = False):
     """
     TODO: Document
     TODO: We must implement different behaviour depending on whether
@@ -30,7 +31,8 @@ def sample_mh_trace_from_z3_model(backend: str,
         samples = sat.get_samples_sat_problem(z3_problem=z3_problem,
                                               num_vars=num_vars,
                                               num_bits=num_bits,
-                                              num_samples=num_samples)
+                                              num_samples=num_samples,
+                                              print_z3_model=print_z3_model)
 
     # run MCMC using the samples from spur or megasampler
     trace = sample_mh_trace(num_samples, num_chains, samples)
@@ -158,7 +160,8 @@ def sample_mh_trace_from_conf_matrix_smt(A: np.ndarray,
 
 def sample_mh_trace_from_conf_matrix_sat(A: np.ndarray,
                                          y: np.ndarray,
-                                         num_bits: int = None,
+                                         num_bits: int,
+                                         max_int_bv: int,
                                          num_samples: int = 10000,
                                          num_chains: int = 4):
     """TODO: Document Function to sample directly from a problem
@@ -169,18 +172,23 @@ def sample_mh_trace_from_conf_matrix_sat(A: np.ndarray,
     num_vars = A.shape[1]
     num_ys   = y.shape[0]
 
-    x = [BitVec(f'x{i}',num_bits) for i in range(num_vars)]
+    x = [BitVec(f'x{i}', num_bits) for i in range(num_vars)]
 
     g = Goal()
 
     sat.add_bool_vars_to_goal(g, x)
 
     for i in range(num_vars):
-        g.add(ULE(0,x[i]))
+        g.add(ULE(0, x[i]))
+        g.add(ULE(x[i], max_int_bv))  # adding also max
+                                      # value to avoid overflows
+
+    # for i in range(num_vars):
+    #     g.add(ULE(0,x[i]))
 
     for i in range(len(y)):
         vars_ = [x[j] for j in range(num_vars) if A[i][j] == 1]
-        sat.addition_does_not_overflow(vars_)
+        g.add(sat.addition_does_not_overflow(vars_))
         g.add(Sum(vars_) == y[i])
 
     trace = sample_mh_trace_from_z3_model(backend='spur',

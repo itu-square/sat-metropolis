@@ -49,6 +49,9 @@ def add_bool_vars_to_goal(g: Goal, var_list: [BitVecSort]):
 # implementation as it was. I wonder whether we do not need to add for
 # each sub-sum?
 
+# NOTE 2 (2024-02-13): When printing the goal with this constraint, it
+# looks like it adds the contraints properly
+
 # adds a constraint regarding the summation of all elements in xs
 # (removes the overflow) and returns the variable
 def addition_does_not_overflow(xs: [], signed=False):
@@ -79,6 +82,58 @@ def sub_does_not_underflow(xs, signed=False):
         noUnderflow = And(noUnderflow, BVSubNoUnderflow(x, sofar, signed))
         sofar = x-sofar
     return noUnderflow
+
+
+def convert_to_cnf_and_dimacs_simp(g: Goal) -> (
+        [[str]],
+        int,
+        dict[int, BoolRef]):
+    t = Then('simplify', 'bit-blast', 'tseitin-cnf')
+    subgoal = t(g)
+    assert len(subgoal) == 1
+
+    count_vars = 0
+    map_vars_nums = {}
+    map_nums_vars = {}
+    dimacs_clauses = [[]]
+
+    # subgoal[0] contains all clauses so we iterate over them
+    for c in subgoal[0]:
+        # temp var to store processed clause
+        clause = []
+        # iterate over literals of a clause
+        for i in range(c.num_args()):
+            # if the clause has only one literal then the clause is
+            # the literal (it is of the form ¬x)
+            # otherwise (it has from l_0 \/ l_1 \/ ...) and we use
+            # arg(i) to select the literal
+            lit = c.arg(i) if c.num_args() > 1 else c
+            # check whether the literal is the negation, i.e., ¬x
+            negation = is_app_of(lit, Z3_OP_NOT)
+            # if negated the variable is arg(0) otherwise the literal
+            # is the variable
+            var = lit.arg(0) if negation else lit
+            # if the variable is not a key in the map var -> num, then
+            # we add it. Apparently, the condition below is computed
+            # in O(1) time and space!
+            if var not in map_vars_nums:
+                # we select a new var number (for dimacs cnf format)
+                count_vars = count_vars + 1
+                # added to the two maps num -> var and var -> num
+                map_vars_nums[var] = count_vars
+                map_nums_vars[count_vars] = var
+            # we append a string modeling the literal in dimacs cnf format
+            clause.append(('-' if negation else '')+str(map_vars_nums[var]))
+        # we add the end of line character for dimacs cnf format
+        dimacs_clauses.append(clause+['0'])
+
+
+    # we add the header of the dimacs cnf format
+    n_varibles = len(map_vars_nums.keys())
+    n_constraints = len(dimacs_clauses)-1
+    s = "p cnf " + str(n_varibles) + " " + str(n_constraints)
+    dimacs_clauses[0].append(s)
+    return (dimacs_clauses, n_varibles, map_nums_vars)
 
 
 def convert_to_cnf_and_dimacs(g: Goal):
@@ -142,7 +197,9 @@ def save_dimacs(g: Goal, output_filepath: str) -> (int, dict):
     #       the output of spur.
     #       Also, we return the map variables_number because we need
     #       to map back the results from spur to its Z3 variables.
-    (dimacs_format, n_varibles, varibles_number) = convert_to_cnf_and_dimacs(g)
+
+    # NOTE (2024-02-14): We are now using `convert_to_cnf_and_dimacs_simp`
+    (dimacs_format, n_varibles, varibles_number) = convert_to_cnf_and_dimacs_simp(g)
 
     path = '/'.join(output_filepath.split('/')[:-1])
     if not os.path.exists(path) and len(path) > 0:
@@ -181,22 +238,40 @@ def parse_spur_samples(input_dir: str,
                        input_file: str,
                        num_samples: int,
                        num_variables: int) -> list[list[bool]]:
+    ## NOTE (2024-02-14): This implementation seems to be correct. I
+    ## added comments line by line
 
+    ## Maja's implementation
     spur_samples_filepath = f'{input_dir}/samples_{input_file[:-4]}.txt'
     n = num_samples
     m = num_variables
+    # reserver space for the samples
     samples1 = np.zeros((n, m), dtype=np.int8)
-    # counter = 0
+    # open samples file
     with open(spur_samples_filepath, 'r') as f:
+        # index for samples
         i = 0
+        # iterave over lines of the samples file
         for line in f:
+            # only consider lines starting with a digit
+            # (these are the lines containing samples)
             if ((line[0]).isdigit()):
+                # number of occurences of sample
+                # (SPUR does not repeat same samples,
+                #  instead it specifies the number of times it occurs)
                 n_ = int(line.split(',')[0])
+                # sample (as a string of 0s and 1s and *s ending in a \n)
                 sampel2 = line.split(',')[1]
+                # remove the \n
                 sampel = sampel2.split('\n')[0]
+                # create a different sample for each occurence
                 for j in range(n_):
+                    # replace each * with a 1 o 0 randomly
+                    # (this is sound due to the meaning of *)
                     replaced = re.sub('\*', __repl_fun, sampel)
+                    # add the sample to the result list of samples
                     samples1[i] = list(map(int, replaced))
+                    # increase the sample index
                     i += 1
     return samples1
 
@@ -217,12 +292,43 @@ def map_spur_samples_to_z3_vars(map_number_z3_var: dict[int, BoolRef],
 
     In this funciton, we still work with blasted variables.
     """
-    # map_number_z3_var = variables_number
+    ## NOTE (2024-02-14): This function is a just an intermediate step
+    ## to get the map from str of the variables (after bit-blasting)
+    ## and an array of samples. The array of samples are the values of
+    ## the variable specified in the key for each sample.
+
+    # init the output map (str -> [bool])
     variable_values = {}
+    # iterate over all variables (after bit-blasting) (this could be
+    # replace by iterating over the keys of map_number_z3_var)
     for i in range(num_variables):
+        # convert the z3 variable into str
+        # (I assume this conversion works for all possible variables)
         z3_var_str = str(map_number_z3_var[i+1])
+
+        # assign to the output map the samples for variable i+1.
+        # We use `i` in spur_parsed_samples because the indexes start
+        # from 0, but the int associated to variables in cnf format
+        # starts in 1
         variable_values[z3_var_str] = spur_parsed_samples[:, i]
     return variable_values
+
+
+def reverse_bit_blasting_simp(variable_values: dict[str, list[bool]],
+                              num_samples: int,
+                              num_vars: int,
+                              num_bits: int) -> list[dict[str, int]]:
+    def from_bin_to_dec(i, s, num_bits, map_variable_values):
+        x = f'x{i}'
+        total = 0
+        for j in range(num_bits):
+            total += 2**j * map_variable_values[f'{x}{j}'][s]
+        return total
+
+    solver_samples = [{f'x{i}': from_bin_to_dec(i, s, num_bits, variable_values)
+                       for i in range(num_vars)} for s in range(num_samples)]
+
+    return solver_samples
 
 
 def reverse_bit_blasting(variable_values: dict[str, list[bool]],
@@ -257,11 +363,15 @@ def get_samples_sat_problem(z3_problem: Goal,
                                            # (assumption: all the same)
                             num_samples: int = 10000,
                             sanity_check_problem: bool = True,
-                            sanity_check_samples: bool = False):
+                            sanity_check_samples: bool = False,
+                            print_z3_model: bool = False):
 
     # TODO: Implement properly (solve does not return a boolean)
     if sanity_check_problem and solve(z3_problem) == unsat:
         raise RuntimeError('The problem you input is UNSAT')
+
+    if print_z3_model:
+        print(z3_problem)
 
     CWD = os.getcwd()
 
@@ -287,10 +397,10 @@ def get_samples_sat_problem(z3_problem: Goal,
                                                       samples)
 
     # reverse bit-blasting
-    solver_samples = reverse_bit_blasting(map_variable_values,
-                                          num_samples,
-                                          num_vars,
-                                          num_bits)
+    solver_samples = reverse_bit_blasting_simp(map_variable_values,
+                                               num_samples,
+                                               num_vars,
+                                               num_bits)
 
     # sanity check (optional, heavy computation for large number of samples)
     # TODO: Implement properly

@@ -112,7 +112,9 @@ def sample_mh_trace(num_samples: int,
 
 def sample_mh_trace_from_conf_matrix_smt(A: np.ndarray,
                                          y: np.ndarray,
-                                         num_samples: int = 10000):
+                                         num_samples: int = 10000,
+                                         num_chains: int = 4,
+                                         print_z3_model: bool = False):
     """Function to sample directly from a linear problem of the form y =
     Ax where A is a configuration matrix and y are observed
     values. The unknown variables are the elements of the vector
@@ -154,7 +156,9 @@ def sample_mh_trace_from_conf_matrix_smt(A: np.ndarray,
 
     trace = sample_mh_trace_from_z3_model(backend='megasampler',
                                           z3_problem=s,
-                                          num_samples=num_samples)
+                                          num_samples=num_samples,
+                                          num_chains=num_chains,
+                                          print_z3_model=print_z3_model)
 
     return trace
 
@@ -163,7 +167,8 @@ def sample_mh_trace_from_conf_matrix_sat(A: np.ndarray,
                                          num_bits: int,
                                          max_int_bv: int,
                                          num_samples: int = 10000,
-                                         num_chains: int = 4):
+                                         num_chains: int = 4,
+                                         print_z3_model: bool = False):
     """TODO: Document Function to sample directly from a problem
     specified using a configuration matrix A, and a set of
     observations y. The function automatically builds a Z3 model and
@@ -183,9 +188,6 @@ def sample_mh_trace_from_conf_matrix_sat(A: np.ndarray,
         g.add(ULE(x[i], max_int_bv))  # adding also max
                                       # value to avoid overflows
 
-    # for i in range(num_vars):
-    #     g.add(ULE(0,x[i]))
-
     for i in range(len(y)):
         vars_ = [x[j] for j in range(num_vars) if A[i][j] == 1]
         g.add(sat.addition_does_not_overflow(vars_))
@@ -196,7 +198,8 @@ def sample_mh_trace_from_conf_matrix_sat(A: np.ndarray,
                                           num_vars=num_vars,
                                           num_bits=num_bits,
                                           num_samples=num_samples,
-                                          num_chains=num_chains)
+                                          num_chains=num_chains,
+                                          print_z3_model=print_z3_model)
 
     return trace
 

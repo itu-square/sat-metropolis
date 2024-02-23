@@ -1,4 +1,5 @@
 from z3 import Goal, Solver, BitVecRef, unsat
+import arviz as az
 
 
 def sat_checking_samples(g: Goal,
@@ -29,3 +30,28 @@ def sat_checking_samples(g: Goal,
         if s.check() == unsat:
             return False
     return True
+
+
+def save_trace(trace: az.InferenceData, output_filename: str) -> None:
+    """Helper function to save output trace as a netcdf file. The
+    main reason to define this funciton is to recall our naming
+    convention for output files. Recall that you should use this format:
+
+        <problem_id>_<method>_<num_vars>_<num_bits>.nc
+
+    where problem_id ϵ {'db_cacm', 'triangle', roads', 'books',
+    'haplotypes'}, method ϵ {'SAT', 'SMT', 'standard_MH',
+    'Markov_Basis, 'EM'}, num_vars ϵ ℕ is the number of variables in
+    the problem and num_bits ϵ ℕ is the number of for each variable
+    (this field is specified if applicable, i.e., if using a SAT
+    sampler)
+    """
+    az.to_netcdf(data=trace, filename=output_filename)
+
+
+def load_trace(trace_filepath: str) -> az.InferenceData:
+    """Simple helper function to load a previously saved trace. See
+    documentation of the `save_trace` for the naming convention of
+    saved files.
+    """
+    return az.from_netcdf(trace_filepath)

@@ -1,10 +1,11 @@
 from subprocess import call
-from z3 import Goal, BitVecSort, Bool, And, BVAddNoOverflow, BVMulNoOverflow, BVSubNoUnderflow, Then, simplify, is_app_of, Z3_OP_NOT, Not, BoolRef, solve, unsat
+from z3 import Goal, BitVecSort, Bool, And, BVAddNoOverflow, BVMulNoOverflow, BVSubNoUnderflow, Then, simplify, is_app_of, Z3_OP_NOT, Not, BoolRef, solve, unsat, sat, Solver
 import math
 import random
 import numpy as np
 import re
 import os
+from warnings import warn
 
 from src.mcmc_sat import utils
 
@@ -335,6 +336,12 @@ def reverse_bit_blasting(variable_values: dict[str, list[bool]],
                          num_samples: int,
                          num_vars: int,
                          num_bits: int) -> list[dict[str, int]]:
+
+    # DEPRECATED function
+    warn('This method is deprecated (and buggy). Please use the newer \
+    `reverse_bit_blasting_simp`. It has the same signature',
+         DeprecationWarning, stacklevel=2)
+
     map_var_name_samples = {}
     for i in range(num_vars):
         var_name = f'x{i}'
@@ -357,6 +364,15 @@ def reverse_bit_blasting(variable_values: dict[str, list[bool]],
     return solver_samples
 
 
+def __check_goal(z3_goal: Goal):
+    """Helper funciton to easily check satisfiability of a Z3 Goal
+    object.
+    """
+    sol = Solver()
+    sol.add(z3_goal)
+    return sol.check()
+
+
 def get_samples_sat_problem(z3_problem: Goal,
                             num_vars: int, # number of varibles unblasted
                             num_bits: int, # number of bits of BitVectors
@@ -366,8 +382,7 @@ def get_samples_sat_problem(z3_problem: Goal,
                             sanity_check_samples: bool = False,
                             print_z3_model: bool = False):
 
-    # TODO: Implement properly (solve does not return a boolean)
-    if sanity_check_problem and solve(z3_problem) == unsat:
+    if sanity_check_problem and __check_goal(z3_problem) == unsat:
         raise RuntimeError('The problem you input is UNSAT')
 
     if print_z3_model:

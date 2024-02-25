@@ -103,7 +103,12 @@ def convert_to_cnf_and_dimacs_simp(g: Goal) -> (
         # temp var to store processed clause
         clause = []
         # iterate over literals of a clause
-        for i in range(c.num_args()):
+        # the +1 is to enter the loop when c has 0 (sub)arguments
+        for i in range(c.num_args()+1):
+            # exit the loop if we are in the last iteration of c with
+            # more than 0 arguments
+            if i == c.num_args() and i > 0:
+                break
             # if the clause has only one literal then the clause is
             # the literal (it is of the form ¬x)
             # otherwise (it has from l_0 \/ l_1 \/ ...) and we use

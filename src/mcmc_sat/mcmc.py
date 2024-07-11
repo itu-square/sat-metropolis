@@ -1,6 +1,7 @@
 import random
 import numpy as np
 import arviz as az
+import os
 from src.mcmc_sat import smt, sat
 from z3 import Solver, Int, Sum, Goal, BitVec, ULE
 from typing import Callable
@@ -33,6 +34,12 @@ def sample_mh_trace_from_z3_model(backend: str,
                                               num_bits=num_bits,
                                               num_samples=num_samples,
                                               print_z3_model=print_z3_model)
+    elif backend == 'cmsgen':
+        samples = sat.get_samples_sat_cmsgen_problem(z3_problem=z3_problem,
+                                                     num_vars=num_vars,
+                                                     num_bits=num_bits,
+                                                     num_samples=num_samples,
+                                                     print_z3_model=print_z3_model)
 
     # run MCMC using the samples from spur or megasampler
     trace = sample_mh_trace(num_samples, num_chains, samples)
@@ -166,6 +173,7 @@ def sample_mh_trace_from_conf_matrix_sat(A: np.ndarray,
                                          y: np.ndarray,
                                          num_bits: int,
                                          max_int_bv: int,
+                                         backend: str = 'spur',
                                          num_samples: int = 10000,
                                          num_chains: int = 4,
                                          print_z3_model: bool = False):
@@ -178,22 +186,25 @@ def sample_mh_trace_from_conf_matrix_sat(A: np.ndarray,
     num_ys   = y.shape[0]
 
     x = [BitVec(f'x{i}', num_bits) for i in range(num_vars)]
+    # x = [BitVec('x'+('_'*i), num_bits) for i in range(num_vars)]
 
     g = Goal()
 
     sat.add_bool_vars_to_goal(g, x)
-
-    for i in range(num_vars):
-        g.add(ULE(0, x[i]))
-        g.add(ULE(x[i], max_int_bv))  # adding also max
-                                      # value to avoid overflows
 
     for i in range(len(y)):
         vars_ = [x[j] for j in range(num_vars) if A[i][j] == 1]
         g.add(sat.addition_does_not_overflow(vars_))
         g.add(Sum(vars_) == y[i])
 
-    trace = sample_mh_trace_from_z3_model(backend='spur',
+    for i in range(num_vars):
+        g.add(ULE(0, x[i]))
+        g.add(ULE(x[i], max_int_bv))  # adding also max
+                                      # value to avoid overflows
+
+    # print(g)
+
+    trace = sample_mh_trace_from_z3_model(backend=backend,
                                           z3_problem=g,
                                           num_vars=num_vars,
                                           num_bits=num_bits,

@@ -282,6 +282,44 @@ def parse_spur_samples(input_dir: str,
     return samples1
 
 
+def execute_cmsgen(input_filepath: str,
+                   output_filepath: str,
+                   num_samples: int = 10000) -> None:
+
+    """Executes cmsgen on the specified input file
+    `input_filepath`. By default, it generates 10000 samples. The
+    samples are added to the file specified in `output_filepath`.
+
+    The function assumes that the spur executable is accessible
+    by calling `cmsgen`.
+
+    """
+    call(['cmsgen',                         # - cmsgen command
+                                            #   (hardcoded, it assumes
+                                            #   accessible for this
+                                            #   user)
+          '--samples', str(num_samples),    # - number of samples
+          '--samplefile', output_filepath,  # - output file path
+          input_filepath])                  # - input file path
+
+
+def parse_cmsgen_samples(input_dir: str,
+                         input_file: str,
+                         num_samples: int,
+                         num_variables: int) -> list[list[bool]]:
+    cmsgen_samples_filepath = f'{input_dir}/{input_file}'
+    samples = []
+    with open(cmsgen_samples_filepath, 'r') as file:
+        for line in file:
+            sample = [int(int(l) >= 0) for l in line.split(' ')][:-1]
+            samples.append(sample)
+    samples_numpy = np.array(samples, dtype=np.int8)
+    if not ((num_samples, num_variables) == samples_numpy.shape):
+                raise RuntimeError(f'The number of samples or number of variables do not match.\n \
+                CMSGen generated {samples_numpy.shape[0]} samples on {samples_numpy.shape[1]} variables, but you specified {num_samples} samples and {num_variables} variables')
+    return samples_numpy
+
+
 def map_spur_samples_to_z3_vars(map_number_z3_var: dict[int, BoolRef],
                                 num_variables: int,
                                 spur_parsed_samples: list[list[bool]]
@@ -410,6 +448,66 @@ def get_samples_sat_problem(z3_problem: Goal,
     # parsing spur samples
     samples = parse_spur_samples(SPUR_INPUT_DIR, SPUR_INPUT_FILE,
                                  num_samples, num_blasted_vars)
+
+    # map spur samples to the corresponding Z3 variable
+    map_variable_values = map_spur_samples_to_z3_vars(variables_number,
+                                                      num_blasted_vars,
+                                                      samples)
+
+    # reverse bit-blasting
+    solver_samples = reverse_bit_blasting_simp(map_variable_values,
+                                               num_samples,
+                                               num_vars,
+                                               num_bits)
+
+    # sanity check (optional, heavy computation for large number of samples)
+    # TODO: Implement properly
+    # if sanity_check_samples and not utils.sat_checking_samples(z3_problem,
+    #                                                            solver_samples[:10],
+    #                                                            var_list):
+    #     raise RuntimeError('Some of the samples produced by SPUR do not satisfy the problem')
+
+    return solver_samples
+
+
+def get_samples_sat_cmsgen_problem(z3_problem: Goal,
+                                   num_vars: int, # number of varibles unblasted
+                                   num_bits: int, # number of bits of BitVectors
+                                                  # (assumption: all the same)
+                                   num_samples: int = 10000,
+                                   sanity_check_problem: bool = True,
+                                   sanity_check_samples: bool = False,
+                                   print_z3_model: bool = False):
+
+    if sanity_check_problem and __check_goal(z3_problem) == unsat:
+        raise RuntimeError('The problem you input is UNSAT')
+
+    if print_z3_model:
+        print(z3_problem)
+
+    CWD = os.getcwd()
+
+    CMSGEN_INPUT_DIR = 'cmsgen_input'
+    CMSGEN_INPUT_DIR_PATH = os.path.join(CWD, CMSGEN_INPUT_DIR)
+    os.mkdir(CMSGEN_INPUT_DIR_PATH) if not os.path.exists(CMSGEN_INPUT_DIR_PATH) else None
+
+    CMSGEN_INPUT_FILE = 'z3_problem.cnf'
+    CMSGEN_INPUT_FILEPATH = f'{CMSGEN_INPUT_DIR}/{CMSGEN_INPUT_FILE}'
+
+    CMSGEN_OUTPUT_FILE = 'cmsgen_samples.out'
+    CMSGEN_OUTPUT_FILEPATH = f'{CMSGEN_INPUT_DIR}/{CMSGEN_OUTPUT_FILE}'
+
+    (num_blasted_vars, variables_number) = save_dimacs(z3_problem,
+                                                       CMSGEN_INPUT_FILEPATH)
+
+    # cmsgen sampling \o/
+    execute_cmsgen(CMSGEN_INPUT_FILEPATH,
+                   CMSGEN_OUTPUT_FILEPATH,
+                   num_samples=num_samples)
+
+    # parsing cmsgen samples
+    samples = parse_cmsgen_samples(CMSGEN_INPUT_DIR, CMSGEN_OUTPUT_FILE,
+                                   num_samples, num_blasted_vars)
 
     # map spur samples to the corresponding Z3 variable
     map_variable_values = map_spur_samples_to_z3_vars(variables_number,

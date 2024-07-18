@@ -5,9 +5,6 @@ This module contains functions to quickly obtain the models we benchmark
 from z3 import Goal, BitVec, ULE, Sum
 import numpy as np
 import pandas as pd
-import itertools
-import random
-import operator
 
 from src.mcmc_sat import sat
 

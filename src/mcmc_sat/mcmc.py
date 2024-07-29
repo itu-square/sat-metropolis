@@ -13,6 +13,9 @@ def sample_mh_trace_from_z3_model(backend: str,
                                   num_bits: int = None,  # mandatory for spur
                                   num_samples: int = 10000,
                                   num_chains: int = 4,
+                                  timeout_sampler: int = 1800,  # seconds
+                                  algo: str = 'MeGA',  # for now only for MegaSampler
+                                  reweight_samples: bool = False,  # only for samplers that produce sets of unique samples
                                   print_z3_model: bool = False):
     """
     TODO: Document
@@ -26,23 +29,36 @@ def sample_mh_trace_from_z3_model(backend: str,
 
     samples = []
     if backend == 'megasampler':
-        samples = smt.get_samples_smt_problem(z3_problem=z3_problem,
-                                              num_samples=num_samples)
+        samples = smt.get_samples_smt_problem(
+            z3_problem=z3_problem,
+            algo=algo,
+            timeout=timeout_sampler,
+            num_samples=num_samples
+        )
     elif backend == 'spur':
-        samples = sat.get_samples_sat_problem(z3_problem=z3_problem,
-                                              num_vars=num_vars,
-                                              num_bits=num_bits,
-                                              num_samples=num_samples,
-                                              print_z3_model=print_z3_model)
+        samples = sat.get_samples_sat_problem(
+            z3_problem=z3_problem,
+            num_vars=num_vars,
+            num_bits=num_bits,
+            num_samples=num_samples,
+            timeout=timeout_sampler,
+            print_z3_model=print_z3_model
+        )
     elif backend == 'cmsgen':
-        samples = sat.get_samples_sat_cmsgen_problem(z3_problem=z3_problem,
-                                                     num_vars=num_vars,
-                                                     num_bits=num_bits,
-                                                     num_samples=num_samples,
-                                                     print_z3_model=print_z3_model)
+        samples = sat.get_samples_sat_cmsgen_problem(
+            z3_problem=z3_problem,
+            num_vars=num_vars,
+            num_bits=num_bits,
+            timeout=timeout_sampler,
+            num_samples=num_samples,
+            print_z3_model=print_z3_model
+        )
 
     # run MCMC using the samples from spur or megasampler
-    trace = sample_mh_trace(num_samples, num_chains, samples)
+    trace = sample_mh_trace(num_samples=num_samples,
+                            num_chains=num_chains,
+                            solver_samples=samples,
+                            reweight_samples=reweight_samples)
 
     return trace
 
@@ -51,8 +67,9 @@ def sample_mh_trace_from_z3_model(backend: str,
 def sample_mh_trace(num_samples: int,
                     num_chains: int,
                     solver_samples: [dict[str, int]],
-                    f: Callable[[list[int]], float] = lambda x: 1,  # by default all samples have the same probability
+                    f: Callable[[dict[str, int]], float] = lambda x: 1,  # by default all samples have the same probability
                                                                     # this should mean uniform prior (if samples uniformly distributed)
+                    reweight_samples: bool = False,  # only toggle for a set of unique samples, e.g., the set from MegaSampler
                     var_names: [str] = []) -> az.InferenceData:
     # NOTE: For now, we use the same solver samples for all chains. We
     # could consider using a fresh set of samples for each chain. If
@@ -69,8 +86,24 @@ def sample_mh_trace(num_samples: int,
     num_solver_samples = len(solver_samples)
     if num_samples > num_solver_samples:
         # TO-DISCUSS: Is this a good solution for this case?
-        print(f'The parameter `solver_samples` only contains {num_solver_samples} samples. Thus, every chain will contain {num_solver_samples} instead of {num_samples}. Try running the SAT/SMT sampler longer to obtain more samples.')
-        num_samples = num_solver_samples
+        if not reweight_samples:
+            num_samples = num_solver_samples
+            print(f'The parameter `solver_samples` only contains {num_solver_samples} samples. Thus, every chain will contain {num_solver_samples} instead of {num_samples}. Try running the SAT/SMT sampler longer to obtain more samples.\n')
+        else:
+            # compute sample weights (unnormalized posterior probability)
+            samples_weights = np.array([f(s) for s in solver_samples])
+            total_weight = sum(samples_weights)
+            normalized_weights = samples_weights/total_weight
+            num_reps = [int(num_samples*nw) for nw in normalized_weights]
+            unflatten_reweighted_samples = [np.repeat(s, r) for (s, r) in
+                                            zip(solver_samples, num_reps)]
+            reweighted_samples = [s for ls in unflatten_reweighted_samples
+                                  for s in ls]
+            # (mutable) update of samples and num_samples
+            # a bit ugly but works for now
+            solver_samples = reweighted_samples
+            num_samples = len(reweighted_samples)
+            print(f'Samples have been reweighted. The sampler generated {num_solver_samples} and the reweighting process has generated {num_samples} (according to the unnormalized posterior probability specified in the input parameter `f`).\n')
     elif num_samples < num_solver_samples:
         print(f'The parameter `solver_samples` contains {num_solver_samples}, which is larger that the number of sample per chain specified: {num_samples}. Every chain will contain {num_samples} samples as specified. Nevertheless, we inform you that you can produce chains of up to {num_solver_samples} if you specify so in {num_samples}.')
 

@@ -89,7 +89,11 @@ def parse_megasamples(filepath: str) -> [dict[str, int]]:
     return res_map
 
 
-def get_samples_smt_problem(z3_problem: Solver, num_samples: int = 10000) -> [dict[str, int]]:
+def get_samples_smt_problem(z3_problem: Solver,
+                            num_samples: int = 10000,
+                            algo: str = 'MeGA',
+                            timeout: int = 1800  # seconds
+                            ) -> [dict[str, int]]:
     """
     TODO: Document
     TODO: num_samples should be parameter
@@ -116,6 +120,8 @@ def get_samples_smt_problem(z3_problem: Solver, num_samples: int = 10000) -> [di
     # execute megasampler
     execute_megasampler(num_samples=num_samples,
                         input_filepath=megasampler_input_filepath,
+                        algo=algo,
+                        time_limit_sec=timeout,
                         output_dir=MEGASAMPLER_OUTPUT_DIR)
 
     # megasampler output file with samples (name automatically set by megasampler)

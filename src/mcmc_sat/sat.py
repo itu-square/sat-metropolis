@@ -218,7 +218,10 @@ def save_dimacs(g: Goal, output_filepath: str) -> (int, dict):
     return (n_varibles, varibles_number)
 
 
-def execute_spur(input_filepath: str, num_samples: int = 10000) -> None:
+def execute_spur(input_filepath: str,
+                 num_samples: int = 10000,
+                 timeout: int = 1800  # seconds
+                 ) -> None:
 
     """Executes spur on the specified input file `input_filepath`. By
     default, it generates 10000 samples. The samples are created on
@@ -231,6 +234,9 @@ def execute_spur(input_filepath: str, num_samples: int = 10000) -> None:
     call(['spur',                  # - spur command (hardcoded, it
                                    #   assumes accessible for this user)
           '-s', str(num_samples),  # - number of samples
+          '-t', str(timeout),      # - timeout in seconds (crashes
+                                   #   if it cannot generate all samples
+                                   #   before the specified timeout)
           '-cnf',                  # - Input format (DIMACS cnf)
           input_filepath])         # - input file path
 
@@ -284,7 +290,9 @@ def parse_spur_samples(input_dir: str,
 
 def execute_cmsgen(input_filepath: str,
                    output_filepath: str,
-                   num_samples: int = 10000) -> None:
+                   num_samples: int = 10000,
+                   timeout: int = 1800
+                   ) -> None:
 
     """Executes cmsgen on the specified input file
     `input_filepath`. By default, it generates 10000 samples. The
@@ -300,7 +308,8 @@ def execute_cmsgen(input_filepath: str,
                                             #   user)
           '--samples', str(num_samples),    # - number of samples
           '--samplefile', output_filepath,  # - output file path
-          input_filepath])                  # - input file path
+          input_filepath],                  # - input file path
+         timeout=timeout)  # timeout in seconds
 
 
 def parse_cmsgen_samples(input_dir: str,
@@ -417,12 +426,13 @@ def __check_goal(z3_goal: Goal):
 
 
 def get_samples_sat_problem(z3_problem: Goal,
-                            num_vars: int, # number of varibles unblasted
-                            num_bits: int, # number of bits of BitVectors
-                                           # (assumption: all the same)
+                            num_vars: int,  # number of varibles unblasted
+                            num_bits: int,  # number of bits of BitVectors
+                                            # (assumption: all the same)
                             num_samples: int = 10000,
                             sanity_check_problem: bool = True,
                             sanity_check_samples: bool = False,
+                            timeout: int = 1800,  # seconds
                             print_z3_model: bool = False):
 
     if sanity_check_problem and __check_goal(z3_problem) == unsat:
@@ -443,7 +453,9 @@ def get_samples_sat_problem(z3_problem: Goal,
                                                        SPUR_INPUT_FILEPATH)
 
     # spur sampling \o/
-    execute_spur(SPUR_INPUT_FILEPATH, num_samples=num_samples)
+    execute_spur(SPUR_INPUT_FILEPATH,
+                 num_samples=num_samples,
+                 timeout=timeout)
 
     # parsing spur samples
     samples = parse_spur_samples(SPUR_INPUT_DIR, SPUR_INPUT_FILE,
@@ -477,6 +489,7 @@ def get_samples_sat_cmsgen_problem(z3_problem: Goal,
                                    num_samples: int = 10000,
                                    sanity_check_problem: bool = True,
                                    sanity_check_samples: bool = False,
+                                   timeout: int = 1800,  # seconds
                                    print_z3_model: bool = False):
 
     if sanity_check_problem and __check_goal(z3_problem) == unsat:
@@ -503,7 +516,8 @@ def get_samples_sat_cmsgen_problem(z3_problem: Goal,
     # cmsgen sampling \o/
     execute_cmsgen(CMSGEN_INPUT_FILEPATH,
                    CMSGEN_OUTPUT_FILEPATH,
-                   num_samples=num_samples)
+                   num_samples=num_samples,
+                   timeout=timeout)
 
     # parsing cmsgen samples
     samples = parse_cmsgen_samples(CMSGEN_INPUT_DIR, CMSGEN_OUTPUT_FILE,

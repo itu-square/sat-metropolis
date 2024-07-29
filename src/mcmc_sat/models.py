@@ -2,7 +2,7 @@
 This module contains functions to quickly obtain the models we benchmark
 """
 
-from z3 import Goal, BitVec, ULE, Sum
+from z3 import Goal, BitVec, ULE, Sum, Int, Solver
 import numpy as np
 import pandas as pd
 
@@ -220,6 +220,178 @@ def get_haplotypes_sat(genotypes: np.ndarray,  # size num_genotypes x
             g.add(x[i*10+j] + x[i*10+j+5] == genotypes[i][j])
 
     return (g, num_bits, num_vars)
+
+
+# SMT Models
+
+def get_triangle_smt(num_vars: int = 3) -> tuple[Solver, int]:
+    x = [Int(f'x{i}') for i in range(num_vars)]
+    s = Solver()  # get an instance of a Z3 solver
+
+    # model constraints
+    s.add(x[0] >= 0)
+    s.add(x[1] >= 0)
+    s.add(x[2] >= 0)
+    s.add(x[0] <= 3)
+    s.add(x[1] <= 3)
+    s.add(x[2] <= 6)
+    s.add(x[0] + x[1] == x[2])
+
+    return (s, num_vars)
+
+
+def get_db_cacm_smt(num_vars: int = 5*2) -> tuple[Solver, int]:
+    x = [Int(f'x{i}') for i in range(num_vars)]  # (age, sex)
+    s = Solver()  # get an instance of a Z3 solver
+
+    # model constraints
+    s.add(0 <= x[0])
+    s.add(x[0] <= x[1])
+    s.add(x[1] <= x[2])
+    s.add(x[2] == 30)  # median
+    s.add(x[2] <= x[3])
+    s.add(x[3] <= x[4])
+    s.add(x[4] <= 125)
+
+    # average
+    s.add(x[0] + x[1] + x[2] + x[3] + x[4] == 38*5)
+
+    for i in range(5, 10):
+        s.add(0 <= x[i])
+        s.add(x[i] <= 1)
+
+    # only 3 males
+    s.add(x[5] + x[6] + x[7] + x[8] + x[9] == 3)
+    # average age of males
+    s.add(x[0]*x[5] + x[1]*x[6] + x[2]*x[7] + x[3]*x[8] + x[4]*x[9] == 44*3)
+
+    return (s, num_vars)
+
+
+def get_nz_stats_smt(path_to_dataset: str = "south_head.csv",
+                     num_vars: int = 19*2) -> tuple[Solver, int]:
+    x = [Int(f'x{i}') for i in range(num_vars)]
+
+    south_head = pd.read_csv(path_to_dataset)
+    numpy_data = south_head.to_numpy()[:, 1:]
+    s = Solver()
+
+    for i in range(28):
+        s.add(x[i] >= 0)
+
+    for i in range(19):
+        s.add(x[i] <= numpy_data[0, i]+2)
+        if (numpy_data[0, i] > 0):
+            s.add(numpy_data[0, i]-2 <= x[i])
+
+        s.add(x[i+19] <= numpy_data[1, i]+2)
+        if (numpy_data[1, i] > 0):
+            s.add(numpy_data[1, i]-2 <= x[i+19])
+
+        s.add(x[i+19] + x[i] <= numpy_data[2, i]+2)
+        if (numpy_data[2, i] > 0):
+            s.add(numpy_data[2, i]-2 <= x[i+19]+x[i])
+
+    return (s, num_vars)
+
+
+def __get_z3_model_from_conf_matrix_smt(max_int: int,
+                                        A: np.ndarray,  # matrix
+                                        y: np.ndarray,  # vector
+                                        ) -> tuple[Solver, int]:
+    # WARNING: The code below is copied from the mcmc.py funciton
+    # sample_mh_trace_from_conf_matrix_sat. It is dangerous to keep
+    # this docupliation as we might end up with two different
+    # models. **Make sure that changes in this function or in the
+    # sample_mh_trace_from_conf_matrix_sat function are consistent.**
+
+    num_vars = A.shape[1]
+    # num_ys = yprime.shape[0] # never used...
+
+    x = [Int(f'x{i}') for i in range(num_vars)]
+
+    s = Solver()
+
+    for i in range(num_vars):
+        s.add(0 <= x[i])
+        s.add(x[i] <= max_int)
+
+    for i in range(len(y)):
+        # Maja's original
+        # vars_ = []
+        # for j in range(num_vars):
+        #     if(A[i][j]==1):
+        #         vars_.append(x[j])
+        vars_ = [x[j] for j in range(num_vars) if A[i][j] == 1]  # alternative
+        s.add(Sum(vars_) == y[i])
+
+    return (s, num_vars)
+
+
+def get_roads_smt(max_int: int,
+                  num_con: int = 4,
+                  y_reduction_factor: int = 11) -> tuple[Solver, int]:
+    # data from problem
+    y = np.array([1087, 1008, 1068, 1204, 1158, 1151, 1143])
+
+    # generate data and configuration matrix according to input parameters
+    yprime = np.array([int(i/y_reduction_factor) for i in y[:num_con]])
+    Aprime = __gen_conf_matrix(yprime)
+
+    (s, num_vars) = __get_z3_model_from_conf_matrix_smt(max_int,
+                                                        Aprime, yprime)
+
+    return (s, num_vars)
+
+
+def get_books_smt(bound: int = 9,
+                  y_reduction_factor: int = 1,
+                  max_int: int = int(86/6)
+                  ) -> tuple[Solver, int]:
+    y = np.array([3, 12, 1, 21, 86, 16, 2, 24, 5, 184, 822, 163,
+                  40, 102, 13, 58, 253, 38, 18, 104, 40, 19, 147,
+                  25, 52, 220, 35, 1, 3, 6, 8, 36, 5, 1, 14, 2, 1,
+                  10, 13, 3, 43, 4])
+
+    Aprime = A_BOOKS[:bound]
+    yprime = np.array([int(i/y_reduction_factor) for i in y[:bound]])
+
+    (s, num_vars) = __get_z3_model_from_conf_matrix_smt(max_int,
+                                                        Aprime, yprime)
+
+    return (s, num_vars)
+
+
+def get_haplotypes_smt(genotypes: np.ndarray,  # size num_genotypes x
+                                               # bits_per_haplotype
+                       ) -> tuple[Solver, int]:
+
+    (num_genotypes, bits_per_haplotype) = genotypes.shape
+
+    # Assumption, all bit-vectors are of the same size. Each
+    # bit-vector represents a haplotype bit, the length is two because
+    # when summing 1 + 1 we must be able to store 10.
+
+    # the last 2 is due to the fact that a genotype is a combination
+    # of 2 haplotypes
+    num_vars = bits_per_haplotype*num_genotypes*2
+    x = [Int(f'x{i}') for i in range(num_vars)]
+    # x = var_list
+    s = Solver()
+
+
+    # Add contraints
+    for i in range(num_vars):
+        s.add(0 <= x[i])
+        s.add(x[i] <= 1)
+
+    # iterate over all genotypes
+    for i in range(num_genotypes):
+        # iterate over all bits of the BitVec
+        for j in range(bits_per_haplotype):
+            s.add(x[i*10+j] + x[i*10+j+5] == genotypes[i][j])
+
+    return (s, num_vars)
 
 
 

@@ -20,8 +20,17 @@ Python library using SAT/SMT samplers in MCMC algos
    2. `cd spur/`
    3. `sudo snap install cmake --classic`
    4. `sudo apt install libgmp-dev `
-   5. `./build.sh`
-   6. `ln -s <path_to_spur_repo>/build/Release/spur ~/.local/bin/spur`
+   5. Spur would not compile with newer versions of g++ because gcc does not include `stdint.h`. Thus, it is necessary to modify the flags in the `CMakeFile.txt` file as follows:
+      ```
+      set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -std=c++11 -Wall -include stdint.h")
+
+      set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -std=c++11 -O3 -DNDEBUG -Wall -include stdint.h")
+
+      set(CMAKE_CXX_FLAGS_PROFILING "${CMAKE_CXX_FLAGS_PROFILING} -std=c++11 -O3 -g
+          -DNDEBUG -Wall -fno-omit-frame-pointer -include stdint.h")
+      ```
+   6. `./build.sh`
+   7. `ln -s <path_to_spur_repo>/build/Release/spur ~/.local/bin/spur`
 9. Download and install [MegaSampler](https://github.com/chaosite/MeGASampler)
    1. `sudo apt install git build-essential python3-minimal python3-dev libjsoncpp-dev python3-venv`
    2. `python -m venv venv --upgrade` (somehow did not create `venv/bin/activate` ...)
@@ -38,4 +47,11 @@ Python library using SAT/SMT samplers in MCMC algos
    13. `conda env config vars set LD_LIBRARY_PATH=<path_to_dir_hosting_virtual_environment>/venv/lib` (this is an example to add the variable to a conda environment, it is also possible to simply add it to `.bashrc`)
    14. `ln -s <path_to_megasampler>/megasampler ~/.local/bin/megasampler`
    
-
+10. Download and install [CMSGen](https://github.com/meelgroup/cmsgen) (this is the same guide as in the repository)
+    1. `sudo apt install zlib1g-dev help2man`
+    2. `cd cmsgen`
+    3. `mkdir build && cd build`
+    4. `cmake ..`
+    5. `make`
+    6. `sudo make install`
+    7. `sudo ldconfig`

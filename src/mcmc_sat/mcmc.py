@@ -91,7 +91,7 @@ def sample_mh_trace(num_samples: int,
             print(f'The parameter `solver_samples` only contains {num_solver_samples} samples. Thus, every chain will contain {num_solver_samples} instead of {num_samples}. Try running the SAT/SMT sampler longer to obtain more samples.\n')
         else:
             # compute sample weights (unnormalized posterior probability)
-            samples_weights = np.array([f(s) for s in solver_samples])
+            samples_weights = np.array([f(s) for s in solver_samples])            
             total_weight = sum(samples_weights)
             normalized_weights = samples_weights/total_weight
             num_reps = [int(num_samples*nw) for nw in normalized_weights]

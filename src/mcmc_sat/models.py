@@ -84,6 +84,9 @@ def get_nz_stats_sat(path_to_dataset: str = "south_head.csv",
     # Add contraints
     numpy_data = south_head.to_numpy()[:, 1:]
 
+    for i in range(38):
+        g.add(ULE(0,x[i]))
+
     for i in range(19):
         g.add(ULE(x[i], numpy_data[0, i]+2))
         if (numpy_data[0, i] > 0):
@@ -276,7 +279,7 @@ def get_nz_stats_smt(path_to_dataset: str = "south_head.csv",
     numpy_data = south_head.to_numpy()[:, 1:]
     s = Solver()
 
-    for i in range(28):
+    for i in range(38):
         s.add(x[i] >= 0)
 
     for i in range(19):

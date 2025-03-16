@@ -10,7 +10,6 @@ from src.mcmc_sat import sat
 
 # SAT Models
 
-
 def get_triangle_sat(num_bits: int = 4,
                      num_vars: int = 3) -> tuple[Goal, int, int]:
     var_list = [BitVec(f'x{i}', num_bits) for i in range(num_vars)]
@@ -185,7 +184,7 @@ def get_books_sat(bound: int = 9,
                   25, 52, 220, 35, 1, 3, 6, 8, 36, 5, 1, 14, 2, 1,
                   10, 13, 3, 43, 4])
 
-    Aprime = A_BOOKS[:bound]
+    Aprime = A_BOOKS[:bound,:]
     yprime = np.array([int(i/y_reduction_factor) for i in y[:bound]])
 
     (g, num_vars) = __get_z3_model_from_conf_matrix_sat(num_bits, max_int_bv,
@@ -307,6 +306,7 @@ def __get_z3_model_from_conf_matrix_smt(max_int: int,
     # this docupliation as we might end up with two different
     # models. **Make sure that changes in this function or in the
     # sample_mh_trace_from_conf_matrix_sat function are consistent.**
+    
 
     num_vars = A.shape[1]
     # num_ys = yprime.shape[0] # never used...
@@ -356,8 +356,8 @@ def get_books_smt(bound: int = 9,
                   25, 52, 220, 35, 1, 3, 6, 8, 36, 5, 1, 14, 2, 1,
                   10, 13, 3, 43, 4])
 
-    Aprime = A_BOOKS[:bound]
-    yprime = np.array([int(i/y_reduction_factor) for i in y[:bound]])
+    Aprime = A_BOOKS[:bound,:]
+    yprime = np.array([int(i/y_reduction_factor) for i in y[:bound]])   
 
     (s, num_vars) = __get_z3_model_from_conf_matrix_smt(max_int,
                                                         Aprime, yprime)

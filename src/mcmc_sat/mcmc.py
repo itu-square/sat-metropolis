@@ -5,6 +5,8 @@ import os
 from src.mcmc_sat import smt, sat
 from z3 import Solver, Int, Sum, Goal, BitVec, ULE
 from typing import Callable
+import time
+import logging
 
 
 def sample_mh_trace_from_z3_model(backend: str,
@@ -15,8 +17,10 @@ def sample_mh_trace_from_z3_model(backend: str,
                                   num_chains: int = 4,
                                   timeout_sampler: int = 1800,  # seconds
                                   algo: str = 'MeGA',  # for now only for MegaSampler
+                                  f: Callable[[dict[str, int]], float] = lambda x: 1,  # by default all samples have the same probability
                                   reweight_samples: bool = False,  # only for samplers that produce sets of unique samples
-                                  print_z3_model: bool = False):
+                                  print_z3_model: bool = False,
+                                  time_execution: bool = False):
     """
     TODO: Document
     TODO: We must implement different behaviour depending on whether
@@ -27,6 +31,7 @@ def sample_mh_trace_from_z3_model(backend: str,
           of type goal for spur.
     """
 
+    start_time_sample_gen = time.time()
     samples = []
     if backend == 'megasampler':
         samples = smt.get_samples_smt_problem(
@@ -53,14 +58,22 @@ def sample_mh_trace_from_z3_model(backend: str,
             num_samples=num_samples,
             print_z3_model=print_z3_model
         )
+    time_sample_gen = time.time() - start_time_sample_gen
+
 
     # run MCMC using the samples from spur or megasampler
+    start_mcmc_time = time.time()
     trace = sample_mh_trace(num_samples=num_samples,
                             num_chains=num_chains,
                             solver_samples=samples,
+                            f=f,
                             reweight_samples=reweight_samples)
+    time_mcmc = time.time() - start_mcmc_time
 
-    return trace
+    if time_execution:
+        return (time_sample_gen, time_mcmc, trace)
+    else:
+        return trace
 
 
 # TODO: add function for computing metropolis ratio

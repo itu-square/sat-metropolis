@@ -9,12 +9,12 @@ Python implementation of the SAT-Metropolis algorithm presented in the accompany
 ## Installation
 
 1. Install [miniconda](https://docs.conda.io/projects/miniconda/en/latest/)
-2. Create mcmc_sat environment: `conda create -n mcmc_sat` (say yes to the question)
+2. Create mcmc_sat environment: `conda create -n sat_metropolis` (say yes to the question)
 3. Set environment variable to avoid use system packages `conda env config vars set PYTHONNOUSERSITE=1` (note: the environment must be active)
-4. Reactivate environment `conda deactivate` and `conda activate mcmc_sat`
-5. Install jupyter lab in environment: conda install -c conda-forge jupyterlab (with mcmc_sat environment active)
-6. Add environemnt as a kernel: `python -m ipykernel install --user --name=mcmc_sat`
-7. Install Z3, numpy and arviz in environment, e.g., run `%pip install z3-solver numpy arviz` in a notebook cell running on kernel in the `mcmc_sat` environment
+4. Reactivate environment `conda deactivate` and `conda activate sat_metropolis`
+5. Install jupyter lab in environment: conda install -c conda-forge jupyterlab (with sat_metropolis environment active)
+6. Add environemnt as a kernel: `python -m ipykernel install --user --name=sat_metropolis`
+7. Install Z3, numpy and arviz in environment, e.g., run `%pip install z3-solver numpy arviz` in a notebook cell running on kernel in the `sat_metropolis` environment
    - Z3 version: z3_solver-4.12.4.0-py2.py3-none-manylinux2014_x86_64.whl.metadata
    - Numpy version: numpy-1.26.2-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata
    - Arviz version: arviz-0.16.1-py3-none-any.whl.metadata

@@ -2,7 +2,7 @@
 
 Python implementation of the SAT-Metropolis algorithm presented in the accompanying paper: "SAT-Metropolis: Combining Markov Chain Monte Carlo with SAT/SMT sampling". SAT-Metropolis uses SAT/SMT samplers as proposal distributions to effectively sample in probabilistic inference problems with hard constraints.
 
-**Code for paper experiments:** The notebook `experiments/experiments.ipynb` contains the code for all the experiments in the accompanying paper.
+**Code for experiments in the accompanying paper:** The notebook `experiments/experiments.ipynb` contains the code for all the experiments in the accompanying paper.
 
 **Get started with SAT-Metropolis:** The notebooks in folders `experiments/sat` and `experiments/smt` contain multiple examples on using SAT-Metropolis with the different backends currently available, namely, SPUR, CMSGen and MegaSampler. Below we provide installation instructions for a conda environment for the library, and instructions to install each backend.
 

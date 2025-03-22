@@ -1,5 +1,5 @@
 """
-This module contains functions to quickly obtain the models we benchmark
+This module contains functions to quickly obtain the models we benchmark in experiments.ipynb
 """
 
 from z3 import Goal, BitVec, ULE, Sum, Int, Solver
@@ -31,7 +31,7 @@ def get_triangle_sat(num_bits: int = 4,
 def get_db_cacm_sat(num_bits: int = 8,
                     num_vars: int = 5*2) -> tuple[Goal, int, int]:
     # num_bits = 8
-    # num_vars = 5*2  # (age, gender)
+    # num_vars = 5*2  # (age, sex)
     var_list = [BitVec(f'x{i}', num_bits) for i in range(num_vars)]  # 0-4 age vars, 5-9 sex vars
     x = var_list
     g = Goal()
@@ -41,9 +41,6 @@ def get_db_cacm_sat(num_bits: int = 8,
     for i in range(5):
         g.add(sat.multi_does_not_overflow([x[i],x[i+5]])) # this is in case of multiplication
 
-    # these are binary (obviously only for the purpose of the example)
-    # FEMALE = 0
-    # MALE = 1
     for i in range(5, 10):
         g.add(ULE(0, x[i]))
         g.add(ULE(x[i], 1))
@@ -78,7 +75,6 @@ def get_nz_stats_sat(path_to_dataset: str = "south_head.csv",
 
     # load data
     south_head = pd.read_csv(path_to_dataset)
-    # print(south_head)
 
     # Add contraints
     numpy_data = south_head.to_numpy()[:, 1:]
@@ -127,18 +123,9 @@ def __get_z3_model_from_conf_matrix_sat(num_bits: int,
                                         Aprime: np.ndarray,  # matrix
                                         yprime: np.ndarray,  # vector
                                         ) -> tuple[Goal, int]:
-    # WARNING: The code below is copied from the mcmc.py funciton
-    # sample_mh_trace_from_conf_matrix_sat. It is dangerous to keep
-    # this docupliation as we might end up with two different
-    # models. **Make sure that changes in this function or in the
-    # sample_mh_trace_from_conf_matrix_sat function are consistent.**
-
     num_vars = Aprime.shape[1]
-    # num_ys = yprime.shape[0] # never used...
 
-    # consider deleting one of these lines
     x = [BitVec(f'x{i}', num_bits) for i in range(num_vars)]
-    # x = [BitVec('x'+('_'*i), num_bits) for i in range(num_vars)]
 
     g = Goal()
 
@@ -301,15 +288,8 @@ def __get_z3_model_from_conf_matrix_smt(max_int: int,
                                         A: np.ndarray,  # matrix
                                         y: np.ndarray,  # vector
                                         ) -> tuple[Solver, int]:
-    # WARNING: The code below is copied from the mcmc.py funciton
-    # sample_mh_trace_from_conf_matrix_sat. It is dangerous to keep
-    # this docupliation as we might end up with two different
-    # models. **Make sure that changes in this function or in the
-    # sample_mh_trace_from_conf_matrix_sat function are consistent.**
-    
 
     num_vars = A.shape[1]
-    # num_ys = yprime.shape[0] # never used...
 
     x = [Int(f'x{i}') for i in range(num_vars)]
 
@@ -320,11 +300,6 @@ def __get_z3_model_from_conf_matrix_smt(max_int: int,
         s.add(x[i] <= max_int)
 
     for i in range(len(y)):
-        # Maja's original
-        # vars_ = []
-        # for j in range(num_vars):
-        #     if(A[i][j]==1):
-        #         vars_.append(x[j])
         vars_ = [x[j] for j in range(num_vars) if A[i][j] == 1]  # alternative
         s.add(Sum(vars_) == y[i])
 

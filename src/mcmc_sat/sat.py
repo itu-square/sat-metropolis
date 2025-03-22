@@ -46,13 +46,6 @@ def add_bool_vars_to_goal(g: Goal, var_list: [BitVecSort]):
             g.add(bitmap[(var_list[j], i)] == ((var_list[j] & mask) == mask))
 
 
-# NOTE: The code in the function below is taken from Maja's
-# implementation as it was. I wonder whether we do not need to add for
-# each sub-sum?
-
-# NOTE 2 (2024-02-13): When printing the goal with this constraint, it
-# looks like it adds the contraints properly
-
 # adds a constraint regarding the summation of all elements in xs
 # (removes the overflow) and returns the variable
 def addition_does_not_overflow(xs: [], signed=False):
@@ -74,8 +67,7 @@ def multi_does_not_overflow(xs, signed=False):
     return noOverflow
 
 
-# same as above
-# most likely substraction from first array element to the last
+# same as above but substraction
 def sub_does_not_underflow(xs, signed=False):
     sofar      = 0
     noUnderflow = True
@@ -89,6 +81,7 @@ def convert_to_cnf_and_dimacs_simp(g: Goal) -> (
         [[str]],
         int,
         dict[int, BoolRef]):
+    # Z3 bit-blasting from De Moura's post -> https://stackoverflow.com/a/13059908
     t = Then('simplify', 'bit-blast', 'tseitin-cnf')
     subgoal = t(g)
     assert len(subgoal) == 1
@@ -143,13 +136,13 @@ def convert_to_cnf_and_dimacs_simp(g: Goal) -> (
 
 
 def convert_to_cnf_and_dimacs(g: Goal):
+    ## WARNING: Deprecated, we use convert_to_cnf_and_dimacs_simp (see above)
+
     # copied from De Moura's post -> https://stackoverflow.com/a/13059908
     t = Then('simplify', 'bit-blast', 'tseitin-cnf')
     subgoal = t(g)
     assert len(subgoal) == 1
 
-    # Maja's conversion code (seems to be correct, although can be
-    # refactored, and double-checked)
     var_count = 1
     constraint_count = 0
     varibles_number = {}
@@ -204,7 +197,7 @@ def save_dimacs(g: Goal, output_filepath: str) -> (int, dict):
     #       Also, we return the map variables_number because we need
     #       to map back the results from spur to its Z3 variables.
 
-    # NOTE (2024-02-14): We are now using `convert_to_cnf_and_dimacs_simp`
+    # NOTE: We use `convert_to_cnf_and_dimacs_simp`
     (dimacs_format, n_varibles, varibles_number) = convert_to_cnf_and_dimacs_simp(g)
 
     path = '/'.join(output_filepath.split('/')[:-1])
@@ -250,10 +243,7 @@ def parse_spur_samples(input_dir: str,
                        input_file: str,
                        num_samples: int,
                        num_variables: int) -> list[list[bool]]:
-    ## NOTE (2024-02-14): This implementation seems to be correct. I
-    ## added comments line by line
 
-    ## Maja's implementation
     spur_samples_filepath = f'{input_dir}/samples_{input_file[:-4]}.txt'
     n = num_samples
     m = num_variables
@@ -345,10 +335,10 @@ def map_spur_samples_to_z3_vars(map_number_z3_var: dict[int, BoolRef],
 
     In this funciton, we still work with blasted variables.
     """
-    ## NOTE (2024-02-14): This function is a just an intermediate step
-    ## to get the map from str of the variables (after bit-blasting)
-    ## and an array of samples. The array of samples are the values of
-    ## the variable specified in the key for each sample.
+    ## NOTE: This function is a just an intermediate step to get the
+    ## map from str of the variables (after bit-blasting) and an array
+    ## of samples. The array of samples are the values of the variable
+    ## specified in the key for each sample.
 
     # init the output map (str -> [bool])
     variable_values = {}
@@ -472,13 +462,6 @@ def get_samples_sat_problem(z3_problem: Goal,
                                                num_vars,
                                                num_bits)
 
-    # sanity check (optional, heavy computation for large number of samples)
-    # TODO: Implement properly
-    # if sanity_check_samples and not utils.sat_checking_samples(z3_problem,
-    #                                                            solver_samples[:10],
-    #                                                            var_list):
-    #     raise RuntimeError('Some of the samples produced by SPUR do not satisfy the problem')
-
     return solver_samples
 
 
@@ -533,12 +516,5 @@ def get_samples_sat_cmsgen_problem(z3_problem: Goal,
                                                num_samples,
                                                num_vars,
                                                num_bits)
-
-    # sanity check (optional, heavy computation for large number of samples)
-    # TODO: Implement properly
-    # if sanity_check_samples and not utils.sat_checking_samples(z3_problem,
-    #                                                            solver_samples[:10],
-    #                                                            var_list):
-    #     raise RuntimeError('Some of the samples produced by SPUR do not satisfy the problem')
 
     return solver_samples

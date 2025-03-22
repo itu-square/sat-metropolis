@@ -11,24 +11,27 @@ import logging
 
 def sample_mh_trace_from_z3_model(backend: str,
                                   z3_problem,
-                                  num_vars: int = None,  # mandatory for spur
-                                  num_bits: int = None,  # mandatory for spur
+                                  num_vars: int = None,  # mandatory for spur/cmsgen
+                                  num_bits: int = None,  # mandatory for spur/cmsgen
                                   num_samples: int = 10000,
                                   num_chains: int = 4,
                                   timeout_sampler: int = 1800,  # seconds
-                                  algo: str = 'MeGA',  # for now only for MegaSampler
+                                  algo: str = 'MeGA',  # only for MegaSampler
                                   f: Callable[[dict[str, int]], float] = lambda x: 1,  # by default all samples have the same probability
                                   reweight_samples: bool = False,  # only for samplers that produce sets of unique samples
-                                  print_z3_model: bool = False,
-                                  time_execution: bool = False):
-    """
-    TODO: Document
-    TODO: We must implement different behaviour depending on whether
-          we use megasampler or spur.  The backend should be specified
-          in the paramter `backend` ϵ {'megasampler', 'spur'} If we
-          must use the appropriate format for the z3_problem.  That
-          is, an object of type Solver for megasampler and an object
-          of type goal for spur.
+                                  print_z3_model: bool = False, # for debugging purposes it is possible to print the z3 model
+                                  time_execution: bool = False): # if true, returns the execution time of metropolis and the SAT/SMT backend separaterly
+    """This function runs sat-metropolis using the Z3 problem specified
+    in `z3_problem` with the backend specified in `backend`. The
+    backend may be 'spur', 'cmsgen' or 'megasampler'. The z3_problem
+    must be either a Z3 solver or goal, depending on whether the
+    backend is megasampler or spur/cmsgen respectively.
+
+    Function `f` is the unnormalized probability density of the
+    corresponding probabilistic model.
+
+    For megasampler, it is possible to ask the algorithm to reweight
+    samples, as megasampler samples only unique solutions.
     """
 
     start_time_sample_gen = time.time()
@@ -90,15 +93,11 @@ def sample_mh_trace(num_samples: int,
     # and the number of chains could be determine by the length of
     # this list.
 
-    # TODO: Take as input a function with a density function
-    # proprotional to the target distribution
-
     # Informing users if there is mismatch between the specified
     # number of samples to generate and the number of samples in
     # `solver_samples`
     num_solver_samples = len(solver_samples)
     if num_samples > num_solver_samples:
-        # TO-DISCUSS: Is this a good solution for this case?
         if not reweight_samples:
             num_samples = num_solver_samples
             print(f'The parameter `solver_samples` only contains {num_solver_samples} samples. Thus, every chain will contain {num_solver_samples} instead of {num_samples}. Try running the SAT/SMT sampler longer to obtain more samples.\n')
@@ -120,18 +119,14 @@ def sample_mh_trace(num_samples: int,
     elif num_samples < num_solver_samples:
         print(f'The parameter `solver_samples` contains {num_solver_samples}, which is larger that the number of sample per chain specified: {num_samples}. Every chain will contain {num_samples} samples as specified. Nevertheless, we inform you that you can produce chains of up to {num_solver_samples} if you specify so in {num_samples}.')
 
-    # up to here the new snippet
-
     # obtain variable names from samples if not specified
     if var_names == []:
         var_names = solver_samples[0].keys()
     trace = {var: np.ndarray(shape=(num_chains, num_samples), dtype=int)
              for var in var_names}
 
-    # TODO: make a regular `def` function?
     should_I_stay_or_should_I_go = lambda s_i, s_prime, alpha, u: s_prime if u <= alpha else s_i
 
-    # TODO: make a regular `def` function?
     get_var_trace = lambda var_name, s: [s_i[var_name] for s_i in s]
 
     # generate each chain separately
@@ -199,12 +194,7 @@ def sample_mh_trace_from_conf_matrix_smt(A: np.ndarray,
         s.add(x[i] >= 0)
 
     for i in range(len(y)):
-        # Maja's original
-        # vars_ = []
-        # for j in range(num_vars):
-        #     if(A[i][j]==1):
-        #         vars_.append(x[j])
-        vars_ = [x[j] for j in range(num_vars) if A[i][j] == 1]  # alternative
+        vars_ = [x[j] for j in range(num_vars) if A[i][j] == 1]
         s.add(Sum(vars_) == y[i])
 
     trace = sample_mh_trace_from_z3_model(backend='megasampler',
@@ -223,16 +213,22 @@ def sample_mh_trace_from_conf_matrix_sat(A: np.ndarray,
                                          num_samples: int = 10000,
                                          num_chains: int = 4,
                                          print_z3_model: bool = False):
-    """TODO: Document Function to sample directly from a problem
-    specified using a configuration matrix A, and a set of
-    observations y. The function automatically builds a Z3 model and
-    samples using spur. Here we also need to input the number of bits.
+    """Function to sample directly from a linear problem of the form y
+    = Ax where A is a configuration matrix and y are observed
+    values. The unknown variables are the elements of the vector
+    x. This is a common format for linear problems, and this function
+    is specially useful to compare our tool with the work by Hazelton
+    et al.
+
+    This is the SAT version of the function
+    `sample_mh_trace_from_conf_matrix_smt` (see the documentation for
+    more details). The main difference is that this function requires
+    the bit-vector size and a max bit-vector value to avoid overflows.
     """
     num_vars = A.shape[1]
     num_ys   = y.shape[0]
 
     x = [BitVec(f'x{i}', num_bits) for i in range(num_vars)]
-    # x = [BitVec('x'+('_'*i), num_bits) for i in range(num_vars)]
 
     g = Goal()
 
@@ -247,8 +243,6 @@ def sample_mh_trace_from_conf_matrix_sat(A: np.ndarray,
         g.add(ULE(0, x[i]))
         g.add(ULE(x[i], max_int_bv))  # adding also max
                                       # value to avoid overflows
-
-    # print(g)
 
     trace = sample_mh_trace_from_z3_model(backend=backend,
                                           z3_problem=g,

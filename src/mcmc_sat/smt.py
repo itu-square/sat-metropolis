@@ -94,10 +94,6 @@ def get_samples_smt_problem(z3_problem: Solver,
                             algo: str = 'MeGA',
                             timeout: int = 1800  # seconds
                             ) -> [dict[str, int]]:
-    """
-    TODO: Document
-    TODO: num_samples should be parameter
-    """
     # get current working directory for defining the necessary paths below
     CWD = os.getcwd()
 

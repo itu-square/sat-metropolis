@@ -248,7 +248,7 @@ def parse_spur_samples(input_dir: str,
     n = num_samples
     m = num_variables
     # reserver space for the samples
-    samples1 = np.zeros((n, m), dtype=np.int8)
+    samples1 = np.zeros((n, m), dtype=np.int_)
     # open samples file
     with open(spur_samples_filepath, 'r') as f:
         # index for samples
@@ -312,7 +312,7 @@ def parse_cmsgen_samples(input_dir: str,
         for line in file:
             sample = [int(int(l) >= 0) for l in line.split(' ')][:-1]
             samples.append(sample)
-    samples_numpy = np.array(samples, dtype=np.int8)
+    samples_numpy = np.array(samples, dtype=np.int_)
     if not ((num_samples, num_variables) == samples_numpy.shape):
                 raise RuntimeError(f'The number of samples or number of variables do not match.\n \
                 CMSGen generated {samples_numpy.shape[0]} samples on {samples_numpy.shape[1]} variables, but you specified {num_samples} samples and {num_variables} variables')
@@ -387,7 +387,7 @@ def reverse_bit_blasting(variable_values: dict[str, list[bool]],
     map_var_name_samples = {}
     for i in range(num_vars):
         var_name = f'x{i}'
-        map_var_name_samples[var_name] = np.zeros(num_samples, dtype=np.int8)
+        map_var_name_samples[var_name] = np.zeros(num_samples, dtype=np.int_)
         for j in range(num_bits):
             bit_j_value = 2**j * variable_values[f'{var_name}{j}']
             map_var_name_samples[var_name] += bit_j_value

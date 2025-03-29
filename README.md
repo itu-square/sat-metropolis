@@ -4,12 +4,14 @@ Python implementation of the SAT-Metropolis algorithm presented in the accompany
 
 **Code for experiments in the accompanying paper:** The notebook `experiments/experiments.ipynb` contains the code for all the experiments in the accompanying paper.
 
-**Get started with SAT-Metropolis:** The notebooks in folders `experiments/sat` and `experiments/smt` contain multiple examples on using SAT-Metropolis with the different backends currently available, namely, SPUR, CMSGen and MegaSampler. Below we provide installation instructions for a conda environment for the library, and instructions to install each backend.
+**Get started with SAT-Metropolis:** The notebooks in folders `experiments/sat` and `experiments/smt` contain multiple examples on using SAT-Metropolis with the different backends currently available, namely, SPUR, CMSGen and MegaSampler. Below we provide installation instructions for a conda environment for the library, and instructions to install each backend. 
+
+After completing the installation steps below, any of the Jupyter notebooks can be executed by selecting the `sat_metropolis` environment.
 
 ## Installation
 
 1. Install [miniconda](https://docs.conda.io/projects/miniconda/en/latest/)
-2. Create mcmc_sat environment: `conda create -n sat_metropolis` (say yes to the question)
+2. Create `sat_metropolis` environment: `conda create -n sat_metropolis` (say yes to the question)
 3. Set environment variable to avoid use system packages `conda env config vars set PYTHONNOUSERSITE=1` (note: the environment must be active)
 4. Reactivate environment `conda deactivate` and `conda activate sat_metropolis`
 5. Install jupyter lab in environment: conda install -c conda-forge jupyterlab (with sat_metropolis environment active)
@@ -19,8 +21,8 @@ Python implementation of the SAT-Metropolis algorithm presented in the accompany
    - Numpy version: numpy-1.26.2-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata
    - Arviz version: arviz-0.16.1-py3-none-any.whl.metadata
 
-8. Download and install [SPUR](https://github.com/ZaydH/spur)
-   /Steps for Ubuntu/
+
+8. Download and install [SPUR](https://github.com/ZaydH/spur). The steps below have been show how to install SPUR in Ubuntu 24.04.
    1. `git clone https://github.com/ZaydH/spur.git`
    2. `cd spur/`
    3. `sudo snap install cmake --classic`
@@ -37,7 +39,8 @@ Python implementation of the SAT-Metropolis algorithm presented in the accompany
    6. `./build.sh`
    7. `ln -s <path_to_spur_repo>/build/Release/spur ~/.local/bin/spur`
 
-9. Download and install [MegaSampler](https://github.com/chaosite/MeGASampler)
+
+9. Download and install [MegaSampler](https://github.com/chaosite/MeGASampler). The following are the same steps as in [MegaSampler](https://github.com/chaosite/MeGASampler).
    1. `sudo apt install git build-essential python3-minimal python3-dev libjsoncpp-dev python3-venv`
    2. `python -m venv venv --upgrade`
    4. `source venv/bin/activate`
@@ -52,8 +55,9 @@ Python implementation of the SAT-Metropolis algorithm presented in the accompany
    13. `make`
    14. `conda env config vars set LD_LIBRARY_PATH=<path_to_dir_hosting_virtual_environment>/venv/lib` (this is an example to add the variable to a conda environment, it is also possible to simply add it to `.bashrc`)
    15. `ln -s <path_to_megasampler>/megasampler ~/.local/bin/megasampler`
-   
-10. Download and install [CMSGen](https://github.com/meelgroup/cmsgen) (this is the same guide as in the repository)
+
+
+10. Download and install [CMSGen](https://github.com/meelgroup/cmsgen). The following are the same steps as in [CMSGen](https://github.com/meelgroup/cmsgen).
     1. `sudo apt install zlib1g-dev help2man`
     2. `cd cmsgen`
     3. `mkdir build && cd build`

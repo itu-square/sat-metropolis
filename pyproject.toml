@@ -28,7 +28,7 @@ maintainers = [
 
 readme = "README.md"
 
-description = "Python implementation of the SAT-Metropolis algorithm presented in the paper: "SAT-Metropolis: Combining Markov Chain Monte Carlo with SAT/SMT sampling". SAT-Metropolis uses SAT/SMT samplers as proposal distributions to effectively sample in probabilistic inference problems with hard constraints."
+description = "Python implementation of the SAT-Metropolis algorithm presented in the paper: SAT-Metropolis: Combining Markov Chain Monte Carlo with SAT/SMT sampling. SAT-Metropolis uses SAT/SMT samplers as proposal distributions to effectively sample in probabilistic inference problems with hard constraints."
 
 license = {file = "LICENSE"}
 keywords = ["metropolis","probabilistic inference","mcmc","sat", "smt","sampling"]

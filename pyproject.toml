@@ -5,15 +5,11 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "sat-metropolis"
 version = "1.0.0"
-dynamic = ["version"]
 dependencies = [
-  "z3_solver",
-  "numpy==1.26.4",
-  "matplotlib==3.9.2",
-  "pandas==2.2.2",
-  "arviz==3.9.2"
+  "z3_solver==4.14.1.0",    
+  "pymc==5.16.1"  
 ]
-requires-python = ">=3.12.4"
+requires-python = ">=3.12"
 
 authors = [
   {name = "Maja Aaslyng Dall", email = "maja.aa.dall@gmail.com"},

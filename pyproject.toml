@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools >= 61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sat-metropolis"
+version = "1.0.0"
+dynamic = ["version"]
+dependencies = [
+  "z3_solver",
+  "numpy==1.26.4",
+  "matplotlib==3.9.2",
+  "pandas==2.2.2",
+  "arviz==3.9.2"
+]
+requires-python = ">=3.12.4"
+
+authors = [
+  {name = "Maja Aaslyng Dall", email = "maja.aa.dall@gmail.com"},
+  {name = "Raúl Pardo", email = "raup@itu.dk"},
+  {name = "Andrzej Wąsowski"},
+  {name = "Thomas Lumley"}
+]
+
+maintainers = [
+  {name = "Raúl Pardo", email = "raup@itu.dk"}
+]
+
+readme = "README.md"
+
+description = "Python implementation of the SAT-Metropolis algorithm presented in the paper: "SAT-Metropolis: Combining Markov Chain Monte Carlo with SAT/SMT sampling". SAT-Metropolis uses SAT/SMT samplers as proposal distributions to effectively sample in probabilistic inference problems with hard constraints."
+
+license = {file = "LICENSE"}
+keywords = ["metropolis","probabilistic inference","mcmc","sat", "smt","sampling"]
+
+[project.urls]
+repository = "https://github.com/itu-square/sat-metropolis/"

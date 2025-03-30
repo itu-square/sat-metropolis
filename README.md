@@ -14,7 +14,7 @@ After completing the installation steps below, any of the Jupyter notebooks can 
 2. Create the `sat_metropolis` conda environment using the `environment.yml` file: `conda env create -n sat_metropolis -f environment.yml`
 3. Activate environment: `conda activate sat_metropolis`
 4. Add environemnt as a kernel: `python -m ipykernel install --user --name=sat_metropolis`
-5. Install `sat_metropolis` library: `pip install .`
+5. Install the `sat_metropolis` library: `pip install .`
 
 
 6. Download and install [SPUR](https://github.com/ZaydH/spur). The steps below have been show how to install SPUR in Ubuntu 24.04.

@@ -6,23 +6,18 @@ Python implementation of the SAT-Metropolis algorithm presented in the accompany
 
 **Get started with SAT-Metropolis:** The notebooks in folders `experiments/sat` and `experiments/smt` contain multiple examples on using SAT-Metropolis with the different backends currently available, namely, SPUR, CMSGen and MegaSampler. Below we provide installation instructions for a conda environment for the library, and instructions to install each backend. 
 
-After completing the installation steps below, any of the Jupyter notebooks can be executed by selecting the `sat_metropolis` kernel; the guide below includes making this kernel available in the system.
+After completing the installation steps below, any of the Jupyter notebooks can be executed by selecting the `sat_metropolis` kernel; the guide below includes making this kernel available in the system. The `sat_metropolis` environment includes `jupyterlab` to execute Jupyter notebooks.
 
 ## Installation
 
 1. Install [miniconda](https://docs.conda.io/projects/miniconda/en/latest/)
-2. Create `sat_metropolis` environment: `conda create -n sat_metropolis` (say yes to the question)
-3. Set environment variable to avoid use system packages `conda env config vars set PYTHONNOUSERSITE=1` (note: the environment must be active)
-4. Reactivate environment `conda deactivate` and `conda activate sat_metropolis`
-5. Install jupyter lab in environment: conda install -c conda-forge jupyterlab (with sat_metropolis environment active)
-6. Add environemnt as a kernel: `python -m ipykernel install --user --name=sat_metropolis`
-7. Install Z3, numpy and arviz in environment, e.g., run `%pip install z3-solver numpy arviz` in a notebook cell running on kernel in the `sat_metropolis` environment
-   - Z3 version: z3_solver-4.12.4.0-py2.py3-none-manylinux2014_x86_64.whl.metadata
-   - Numpy version: numpy-1.26.2-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata
-   - Arviz version: arviz-0.16.1-py3-none-any.whl.metadata
+2. Create the `sat_metropolis` conda environment using the `environment.yml` file: `conda env create -n sat_metropolis -f environment.yml`
+3. Activate environment: `conda activate sat_metropolis`
+4. Add environemnt as a kernel: `python -m ipykernel install --user --name=sat_metropolis`
+5. Install `sat_metropolis` library: `pip install .`
 
 
-8. Download and install [SPUR](https://github.com/ZaydH/spur). The steps below have been show how to install SPUR in Ubuntu 24.04.
+6. Download and install [SPUR](https://github.com/ZaydH/spur). The steps below have been show how to install SPUR in Ubuntu 24.04.
    1. `git clone https://github.com/ZaydH/spur.git`
    2. `cd spur/`
    3. `sudo snap install cmake --classic`
@@ -40,7 +35,7 @@ After completing the installation steps below, any of the Jupyter notebooks can 
    7. `ln -s <path_to_spur_repo>/build/Release/spur ~/.local/bin/spur`
 
 
-9. Download and install [MegaSampler](https://github.com/chaosite/MeGASampler). The following are the same steps as in [MegaSampler](https://github.com/chaosite/MeGASampler).
+7. Download and install [MegaSampler](https://github.com/chaosite/MeGASampler). The following are the same steps as in [MegaSampler](https://github.com/chaosite/MeGASampler).
    1. `sudo apt install git build-essential python3-minimal python3-dev libjsoncpp-dev python3-venv`
    2. `python -m venv venv --upgrade`
    4. `source venv/bin/activate`
@@ -57,7 +52,7 @@ After completing the installation steps below, any of the Jupyter notebooks can 
    15. `ln -s <path_to_megasampler>/megasampler ~/.local/bin/megasampler`
 
 
-10. Download and install [CMSGen](https://github.com/meelgroup/cmsgen). The following are the same steps as in [CMSGen](https://github.com/meelgroup/cmsgen).
+8. Download and install [CMSGen](https://github.com/meelgroup/cmsgen). The following are the same steps as in [CMSGen](https://github.com/meelgroup/cmsgen).
     1. `sudo apt install zlib1g-dev help2man`
     2. `cd cmsgen`
     3. `mkdir build && cd build`

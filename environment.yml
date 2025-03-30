@@ -1,4 +1,4 @@
-name: sat-metropolist-env
+name: sat-metropolist-environment
 channels:
   - default
   - conda-forge

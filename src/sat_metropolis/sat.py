@@ -7,7 +7,7 @@ import re
 import os
 from warnings import warn
 
-from src.mcmc_sat import utils
+from sat_metropolis import utils
 
 # NOTE: The function below creates a new variable for each bit in the
 #       bit-vector.  Then, it maps the correspoding variable of the

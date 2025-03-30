@@ -2,7 +2,7 @@ import random
 import numpy as np
 import arviz as az
 import os
-from src.mcmc_sat import smt, sat
+from sat_metropolis import smt, sat
 from z3 import Solver, Int, Sum, Goal, BitVec, ULE
 from typing import Callable
 import time

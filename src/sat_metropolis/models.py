@@ -6,7 +6,7 @@ from z3 import Goal, BitVec, ULE, Sum, Int, Solver
 import numpy as np
 import pandas as pd
 
-from src.mcmc_sat import sat
+from sat_metropolis import sat
 
 # SAT Models
 

@@ -1,0 +1,11 @@
+name: sat-metropolist-environment
+channels:
+  - default
+  - conda-forge
+dependencies:
+  - python==3.12.9
+  - ipykernel
+  - jupyterlab
+  - pip
+variables:
+  PYTHONNOUSERSITE: '1'

@@ -17,7 +17,7 @@ After completing the installation steps below, any of the Jupyter notebooks can 
 5. Install the `sat_metropolis` library: `python -m pip install .`
 
 
-6. Download and install [SPUR](https://github.com/ZaydH/spur).
+6. Download and install [SPUR](https://github.com/ZaydH/spur). The following are the same steps as in [MegaSampler](https://github.com/chaosite/MeGASampler) with some minor modifications.
    1. `git clone https://github.com/ZaydH/spur.git`
    2. `cd spur/`
    3. `sudo snap install cmake --classic`
@@ -35,7 +35,7 @@ After completing the installation steps below, any of the Jupyter notebooks can 
    7. `ln -s <path_to_spur_repo>/build/Release/spur ~/.local/bin/spur`
 
 
-7. Download and install [MegaSampler](https://github.com/chaosite/MeGASampler). The following are the same steps as in [MegaSampler](https://github.com/chaosite/MeGASampler).
+7. Download and install [MegaSampler](https://github.com/chaosite/MeGASampler). The following are the same steps as in [MegaSampler](https://github.com/chaosite/MeGASampler) with some minor modifications.
    1. `sudo apt install git build-essential python3-minimal python3-dev libjsoncpp-dev python3-venv`
    2. `python -m venv venv --upgrade`
    4. `source venv/bin/activate`

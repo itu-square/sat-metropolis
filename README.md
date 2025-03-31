@@ -17,7 +17,7 @@ After completing the installation steps below, any of the Jupyter notebooks can 
 5. Install the `sat_metropolis` library: `python -m pip install .`
 
 
-6. Download and install [SPUR](https://github.com/ZaydH/spur). The steps below have been show how to install SPUR in Ubuntu 24.04.
+6. Download and install [SPUR](https://github.com/ZaydH/spur).
    1. `git clone https://github.com/ZaydH/spur.git`
    2. `cd spur/`
    3. `sudo snap install cmake --classic`

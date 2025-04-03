@@ -6,7 +6,7 @@ Python implementation of the SAT-Metropolis algorithm presented in the accompany
 
 **Get started with SAT-Metropolis:** The notebooks in folders `experiments/sat` and `experiments/smt` contain multiple examples on using SAT-Metropolis with the different backends currently available, namely, SPUR, CMSGen and MegaSampler. Below we provide installation instructions for a conda environment for the library, and instructions to install each backend. 
 
-After completing the installation steps below, any of the Jupyter notebooks can be executed by selecting the `sat_metropolis` kernel; the guide below includes making this kernel available in the system. The `sat_metropolis` environment includes `jupyterlab` to execute Jupyter notebooks.
+After completing the installation steps below, any of the Jupyter notebooks can be executed by selecting the `sat_metropolis` kernel; the guide below includes making this kernel available in the system. The conda environment includes `jupyterlab` to execute Jupyter notebooks.
 
 ## Installation
 
@@ -17,7 +17,7 @@ After completing the installation steps below, any of the Jupyter notebooks can 
 5. Install the `sat_metropolis` library: `python -m pip install .`
 
 
-6. Download and install [SPUR](https://github.com/ZaydH/spur). The following are the same steps as in [MegaSampler](https://github.com/chaosite/MeGASampler) with some minor modifications.
+6. Download and install [SPUR](https://github.com/ZaydH/spur). The following are the same steps as in [SPUR](https://github.com/ZaydH/spur) with some minor modifications.
    1. `git clone https://github.com/ZaydH/spur.git`
    2. `cd spur/`
    3. `sudo snap install cmake --classic`

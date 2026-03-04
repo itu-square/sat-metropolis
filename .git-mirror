@@ -1,4 +1,5 @@
 stem: 2023-mcmc-sat
-origin: gitolite@dukla.ch:2023-mcmc-sat
+origin: git@bitbucket.org:andrzej_wasowski/mcmc_sat-mirror.git
 backup_mirrors:
 - git@github.com:itu-square/mcmc_sat.git
+- gitolite@dukla.ch:2023-mcmc-sat
